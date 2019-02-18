@@ -1,7 +1,7 @@
 package daos
 
 import (
-	"github.com/constant-money/constant-web/event/models"
+	"github.com/constant-money/constant-event/models"
 	"github.com/jinzhu/gorm"
 )
 

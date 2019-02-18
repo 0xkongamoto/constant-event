@@ -4,7 +4,7 @@ import (
 	"log"
 	"math/big"
 
-	contract "github.com/constant-money/constant-web/event/ethereum/contract"
+	contract "github.com/constant-money/constant-event/ethereum/contract"
 	"github.com/ethereum/go-ethereum/common"
 )
 

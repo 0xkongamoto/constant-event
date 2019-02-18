@@ -3,7 +3,7 @@ package models
 import (
 	"log"
 
-	"github.com/constant-money/constant-web/event/config"
+	"github.com/constant-money/constant-event/config"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/jinzhu/gorm"
 )

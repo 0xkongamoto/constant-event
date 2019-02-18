@@ -10,8 +10,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/constant-money/constant-web/event/config"
-	"github.com/constant-money/constant-web/event/daos"
+	"github.com/constant-money/constant-event/config"
+	"github.com/constant-money/constant-event/daos"
 )
 
 const (

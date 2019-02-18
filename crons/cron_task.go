@@ -8,10 +8,10 @@ import (
 	"math/big"
 	"strings"
 
-	"github.com/constant-money/constant-web/event/config"
-	"github.com/constant-money/constant-web/event/daos"
-	"github.com/constant-money/constant-web/event/ethereum"
-	"github.com/constant-money/constant-web/event/models"
+	"github.com/constant-money/constant-event/config"
+	"github.com/constant-money/constant-event/daos"
+	"github.com/constant-money/constant-event/ethereum"
+	"github.com/constant-money/constant-event/models"
 	"github.com/jinzhu/gorm"
 	"github.com/mitchellh/mapstructure"
 )

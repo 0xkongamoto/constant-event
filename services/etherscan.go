@@ -7,7 +7,7 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/constant-money/constant-web/event/config"
+	"github.com/constant-money/constant-event/config"
 )
 
 // EtherscanService :

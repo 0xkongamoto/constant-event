@@ -6,14 +6,14 @@ import (
 	"os"
 	"time"
 
-	"github.com/constant-money/constant-web/event/config"
-	"github.com/constant-money/constant-web/event/crons"
-	"github.com/constant-money/constant-web/event/daos"
-	"github.com/constant-money/constant-web/event/models"
-	"github.com/constant-money/constant-web/event/services"
+	"github.com/constant-money/constant-event/config"
+	"github.com/constant-money/constant-event/crons"
+	"github.com/constant-money/constant-event/daos"
+	"github.com/constant-money/constant-event/models"
+	"github.com/constant-money/constant-event/services"
 	"github.com/robfig/cron"
 
-	bedaos "github.com/constant-money/constant-web/backend/daos"
+	bedaos "github.com/constant-money/constant-web-api/daos"
 )
 
 func main() {
