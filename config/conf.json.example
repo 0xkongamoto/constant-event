@@ -1,0 +1,26 @@
+{
+  "env": "DEV",
+  "db": "root:root@tcp(localhost:3306)/constant_mvp?charset=utf8&parseTime=True&loc=Local",
+  "chain_id": 4,
+  "chain_url": "https://rinkeby.infura.io/",
+  "etherscan_url": "https://rinkeby.etherscan.io/api",
+  "etherscan_key": "",
+  "hook_endpoint": "http://localhost:8000/event",
+  "primetrust_prefix": "",
+  "primetrust_email": "",
+  "primetrust_password": "",
+  "contract_owner_private_key": "",
+  "contract_owner_wallet_address": "",
+  "contracts": [
+    {
+      "name": "ContractA",
+      "address": "0x123"
+    }
+  ],
+  "master_addresses": [
+    {
+      "key": "0x123",
+      "address": "0x123"
+    }
+  ]
+}
