@@ -14,20 +14,23 @@ import (
 	"github.com/constant-money/constant-event/config"
 	"github.com/constant-money/constant-event/daos"
 	"github.com/constant-money/constant-event/models"
+	"github.com/constant-money/constant-web-api/services/3rd/primetrust"
 )
 
 // UserService : struct
 type UserService struct {
-	ud      *daos.UserDAO
-	conf    *config.Config
-	Running bool
+	ud         *daos.UserDAO
+	conf       *config.Config
+	primetrust *primetrust.Primetrust
+	Running    bool
 }
 
 // InitUserService :
-func InitUserService(userDao *daos.UserDAO, cf *config.Config) *UserService {
+func InitUserService(userDao *daos.UserDAO, primetrust *primetrust.Primetrust, cf *config.Config) *UserService {
 	return &UserService{
-		ud:   userDao,
-		conf: cf,
+		ud:         userDao,
+		primetrust: primetrust,
+		conf:       cf,
 	}
 }
 
@@ -207,70 +210,62 @@ func (us *UserService) ScanKYC() {
 }
 
 func (us *UserService) checkPrimetrustContactID(ID string) (bool, string) {
-	endpoint := us.conf.PrimetrustEndpoint + "/contacts/" + ID
-	request, _ := http.NewRequest("GET", endpoint, nil)
-	request.Header.Add("Authorization", "Basic "+basicAuth(us.conf.PrimetrustUsername, us.conf.PrimetrustPassword))
+	response, err := us.primetrust.GetContactByID(ID)
 
-	client := &http.Client{}
-	response, err := client.Do(request)
-	if err == nil {
-		b, _ := ioutil.ReadAll(response.Body)
-		var result map[string]interface{}
-		json.Unmarshal([]byte(b), &result)
+	if err != nil {
+		return false, "404"
+	}
 
-		if result["errors"] != nil {
-			return false, "Primetrust id not found"
-		}
+	contactData := response.Data
+	if contactData != nil {
+		attributes := contactData.Attributes
+		if attributes != nil {
+			aml := attributes.AMLCleared
+			cip := attributes.CIPCleared
 
-		if result["data"] != nil {
-			data := result["data"].(map[string]interface{})
-			if data["attributes"] != nil {
-				attributes := data["attributes"].(map[string]interface{})
-				aml := attributes["aml-cleared"].(bool)
-				cip := attributes["cip-cleared"].(bool)
+			if aml && cip {
+				return true, ""
+			}
 
-				if aml && cip {
-					return true, ""
-				}
+			relationships := contactData.Relationships
+			if relationships != nil {
+				cipChecks := relationships.CIPChecks
+				if cipChecks != nil {
+					links := cipChecks.Links
+					if links != nil {
+						related := links.Related
+						if related != "" {
+							arr := strings.Split(related, "/v2")
+							end := us.conf.PrimetrustEndpoint + related
+							if len(arr) == 2 {
+								end = us.conf.PrimetrustEndpoint + arr[1]
+							}
+							req, _ := http.NewRequest("GET", end, nil)
+							token, err := us.primetrust.GetToken()
+							if err != nil {
+								return false, "404"
+							}
 
-				if data["relationships"] != nil {
-					relationships := data["relationships"].(map[string]interface{})
-					if relationships["cip-checks"] != nil {
-						cipChecks := relationships["cip-checks"].(map[string]interface{})
-						if cipChecks["links"] != nil {
-							links := cipChecks["links"].(map[string]interface{})
-
-							related := links["related"].(string)
-							if related != "" {
-								arr := strings.Split(related, "/v2")
-								end := us.conf.PrimetrustEndpoint + related
-								if len(arr) == 2 {
-									end = us.conf.PrimetrustEndpoint + arr[1]
-								}
-								req, _ := http.NewRequest("GET", end, nil)
-								req.Header.Add("Authorization", "Basic "+basicAuth(us.conf.PrimetrustUsername, us.conf.PrimetrustPassword))
-								client := &http.Client{}
-								response, err := client.Do(req)
-								if err == nil {
-									b, _ := ioutil.ReadAll(response.Body)
-									s := string(b[:])
-									return false, s
-								}
-
+							req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", token))
+							client := &http.Client{}
+							response, err := client.Do(req)
+							if err == nil {
+								b, _ := ioutil.ReadAll(response.Body)
+								s := string(b[:])
+								return false, s
 							}
 
 						}
 					}
-
 				}
-				return false, "404"
 			}
-		}
 
-		return false, "Cannot parse data"
+			return false, "404"
+		}
 	}
 
-	return false, "404"
+	return false, "Cannot parse data"
+
 }
 
 func (us *UserService) sendKYCHook(userID uint, primetrustStatus bool, primetrustError string) error {

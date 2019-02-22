@@ -2,7 +2,6 @@ package services
 
 import (
 	"bytes"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -10,25 +9,26 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/pkg/errors"
-
-	"github.com/constant-money/constant-event/config"
 	"github.com/constant-money/constant-event/daos"
 	"github.com/constant-money/constant-event/models"
+	"github.com/constant-money/constant-web-api/services/3rd/primetrust"
+	"github.com/pkg/errors"
 )
 
 // ReserveService : struct
 type ReserveService struct {
-	rd      *daos.ReserveDAO
-	conf    *config.Config
-	Running bool
+	primetrust   *primetrust.Primetrust
+	rd           *daos.ReserveDAO
+	hookEndpoint string
+	Running      bool
 }
 
 // InitReserveService : reserveDAO
-func InitReserveService(reserveDAO *daos.ReserveDAO, config *config.Config) *ReserveService {
+func InitReserveService(reserveDAO *daos.ReserveDAO, primetrust *primetrust.Primetrust, hookEndpoint string) *ReserveService {
 	return &ReserveService{
-		rd:   reserveDAO,
-		conf: config,
+		rd:           reserveDAO,
+		primetrust:   primetrust,
+		hookEndpoint: hookEndpoint,
 	}
 }
 
@@ -80,39 +80,21 @@ func (r *ReserveService) execLogic(reserve *models.Reserve) {
 	}
 }
 
-func basicAuth(username, password string) string {
-	auth := username + ":" + password
-	return base64.StdEncoding.EncodeToString([]byte(auth))
-}
-
 func (r *ReserveService) contributions(extID string) (string, error) {
-	endpoint := r.conf.PrimetrustEndpoint + "/contributions/" + extID
-	request, _ := http.NewRequest("GET", endpoint, nil)
-	request.Header.Add("Authorization", "Basic "+basicAuth(r.conf.PrimetrustUsername, r.conf.PrimetrustPassword))
-
-	client := &http.Client{}
-	response, err := client.Do(request)
+	response, err := r.primetrust.GetContribution(extID)
 	if err != nil {
-		return "", err
+		return "", errors.New("Cannot parse data")
 	}
 
-	b, _ := ioutil.ReadAll(response.Body)
-	var result map[string]interface{}
-	json.Unmarshal([]byte(b), &result)
-
-	if result["errors"] != nil {
-		return "", errors.New("ExtID not found")
-	}
-
-	if result["data"] != nil {
-		data := result["data"].(map[string]interface{})
-		if data["relationships"] != nil {
-			relationships := data["relationships"].(map[string]interface{})
-			if relationships["funds-transfer"] != nil {
-				funds := relationships["funds-transfer"].(map[string]interface{})
-				if funds["links"] != nil {
-					links := funds["links"].(map[string]interface{})
-					related := links["related"].(string)
+	contributionData := response.Data
+	if contributionData != nil {
+		relationships := contributionData.Relationships
+		if relationships != nil {
+			fundTransfer := relationships.FundsTransfer
+			if fundTransfer != nil {
+				links := fundTransfer.Links
+				if links != nil {
+					related := links.Related
 					if related != "" {
 						s := strings.Split(related, "/")
 						if len(s) > 0 {
@@ -129,33 +111,20 @@ func (r *ReserveService) contributions(extID string) (string, error) {
 }
 
 func (r *ReserveService) disbursement(extID string) (string, error) {
-	endpoint := r.conf.PrimetrustEndpoint + "/disbursements/" + extID
-	request, _ := http.NewRequest("GET", endpoint, nil)
-	request.Header.Add("Authorization", "Basic "+basicAuth(r.conf.PrimetrustUsername, r.conf.PrimetrustPassword))
-
-	client := &http.Client{}
-	response, err := client.Do(request)
+	response, err := r.primetrust.GetDisbursement(extID)
 	if err != nil {
-		return "", err
+		return "", errors.New("Cannot parse data")
 	}
 
-	b, _ := ioutil.ReadAll(response.Body)
-	var result map[string]interface{}
-	json.Unmarshal([]byte(b), &result)
-
-	if result["errors"] != nil {
-		return "", errors.New("ExtID not found")
-	}
-
-	if result["data"] != nil {
-		data := result["data"].(map[string]interface{})
-		if data["relationships"] != nil {
-			relationships := data["relationships"].(map[string]interface{})
-			if relationships["funds-transfer"] != nil {
-				funds := relationships["funds-transfer"].(map[string]interface{})
-				if funds["links"] != nil {
-					links := funds["links"].(map[string]interface{})
-					related := links["related"].(string)
+	disbursementData := response.Data
+	if disbursementData != nil {
+		relationships := disbursementData.Relationships
+		if relationships != nil {
+			fundTransfer := relationships.FundsTransfer
+			if fundTransfer != nil {
+				links := fundTransfer.Links
+				if links != nil {
+					related := links.Related
 					if related != "" {
 						s := strings.Split(related, "/")
 						if len(s) > 0 {
@@ -172,29 +141,16 @@ func (r *ReserveService) disbursement(extID string) (string, error) {
 }
 
 func (r *ReserveService) fundTransfer(cons string) (string, error) {
-	endpoint := r.conf.PrimetrustEndpoint + "/funds-transfers/" + cons
-	request, _ := http.NewRequest("GET", endpoint, nil)
-	request.Header.Add("Authorization", "Basic "+basicAuth(r.conf.PrimetrustUsername, r.conf.PrimetrustPassword))
-
-	client := &http.Client{}
-	response, err := client.Do(request)
+	response, err := r.primetrust.GetFundsTransfer(cons)
 	if err != nil {
-		return "", err
+		return "", errors.New("Cannot parse data")
 	}
 
-	b, _ := ioutil.ReadAll(response.Body)
-	var result map[string]interface{}
-	json.Unmarshal([]byte(b), &result)
-
-	if result["errors"] != nil {
-		return "", errors.New("Cons not found")
-	}
-
-	if result["data"] != nil {
-		data := result["data"].(map[string]interface{})
-		if data["attributes"] != nil {
-			attributes := data["attributes"].(map[string]interface{})
-			status := attributes["status"].(string)
+	fundTransferData := response.Data
+	if fundTransferData != nil {
+		attributes := fundTransferData.Attributes
+		if attributes != nil {
+			status := attributes.Status
 			return status, nil
 		}
 	}
@@ -203,7 +159,7 @@ func (r *ReserveService) fundTransfer(cons string) (string, error) {
 }
 
 func (r *ReserveService) hook(jsonData map[string]interface{}) (string, error) {
-	endpoint := r.conf.HookEndpoint
+	endpoint := r.hookEndpoint
 	jsonValue, _ := json.Marshal(jsonData)
 
 	request, _ := http.NewRequest("POST", endpoint, bytes.NewBuffer(jsonValue))

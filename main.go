@@ -14,6 +14,7 @@ import (
 	"github.com/robfig/cron"
 
 	bedaos "github.com/constant-money/constant-web-api/daos"
+	"github.com/constant-money/constant-web-api/services/3rd/primetrust"
 )
 
 func main() {
@@ -28,6 +29,7 @@ func main() {
 
 	// config
 	conf := config.GetConfig()
+	pt := primetrust.Init(conf.PrimetrustEndpoint, conf.PrimetrustUsername, conf.PrimetrustPassword, conf.PrimetrustAccountID)
 
 	mapContracts := conf.Contracts
 	for _, value := range mapContracts {
@@ -95,8 +97,7 @@ func main() {
 
 	// add reserve cron
 	reserveDAO := daos.NewReserve(models.Database())
-
-	reserveSrv := services.InitReserveService(reserveDAO, conf)
+	reserveSrv := services.InitReserveService(reserveDAO, pt, conf.HookEndpoint)
 	reserveCron := cron.New()
 	reserveCron.AddFunc("@every 30m", func() {
 		fmt.Println("scan reserve every 30m")
@@ -112,7 +113,7 @@ func main() {
 
 	// add user wallet cron
 	userDAO := daos.InitUserDAO(models.Database())
-	userSrv := services.InitUserService(userDAO, conf)
+	userSrv := services.InitUserService(userDAO, pt, conf)
 	userCron := cron.New()
 	userCron.AddFunc("@every 30m", func() {
 		fmt.Println("scan user service every 30m")

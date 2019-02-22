@@ -29,19 +29,20 @@ func GetConfig() *Config {
 }
 
 type Config struct {
-	Port               int                   `json:"port"`
-	Db                 string                `json:"db"`
-	Env                string                `json:"env"`
-	ChainID            uint                  `json:"chain_id"`
-	ChainURL           string                `json:"chain_url"`
-	EtherscanURL       string                `json:"etherscan_url"`
-	EtherscanKey       string                `json:"etherscan_key"`
-	HookEndpoint       string                `json:"hook_endpoint"`
-	PrimetrustEndpoint string                `json:"primetrust_prefix"`
-	PrimetrustUsername string                `json:"primetrust_email"`
-	PrimetrustPassword string                `json:"primetrust_password"`
-	Contracts          []Contract            `json:"contracts"`
-	MasterAddresses    []MasterAddressConfig `json:"master_addresses"`
+	Port                int                   `json:"port"`
+	Db                  string                `json:"db"`
+	Env                 string                `json:"env"`
+	ChainID             uint                  `json:"chain_id"`
+	ChainURL            string                `json:"chain_url"`
+	EtherscanURL        string                `json:"etherscan_url"`
+	EtherscanKey        string                `json:"etherscan_key"`
+	HookEndpoint        string                `json:"hook_endpoint"`
+	PrimetrustEndpoint  string                `json:"primetrust_prefix"`
+	PrimetrustUsername  string                `json:"primetrust_email"`
+	PrimetrustPassword  string                `json:"primetrust_password"`
+	PrimetrustAccountID string                `json:"primetrust_account_id"`
+	Contracts           []Contract            `json:"contracts"`
+	MasterAddresses     []MasterAddressConfig `json:"master_addresses"`
 }
 
 type Contract struct {
