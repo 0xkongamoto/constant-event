@@ -3,6 +3,7 @@ package models
 import (
 	"time"
 
+	wm "github.com/constant-money/constant-web-api/models"
 	"github.com/jinzhu/gorm"
 )
 
@@ -24,7 +25,7 @@ type CollateralLoan struct {
 	gorm.Model
 
 	UserID uint
-	User   *User
+	User   *wm.User
 
 	Amount               uint64
 	CollateralAddress    string

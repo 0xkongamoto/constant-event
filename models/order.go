@@ -1,6 +1,9 @@
 package models
 
-import "github.com/jinzhu/gorm"
+import (
+	wm "github.com/constant-money/constant-web-api/models"
+	"github.com/jinzhu/gorm"
+)
 
 type MakerType int
 type LocalStatus int
@@ -25,7 +28,7 @@ const (
 type Order struct {
 	gorm.Model
 	Type    MakerType
-	User    User `gorm:"foreignkey:UserID"`
+	User    wm.User `gorm:"foreignkey:UserID"`
 	UserID  uint
 	Shakers []Shaker `gorm:"foreignkey:OrderHistoryID;auto_preload:true"`
 	Makers  []Maker  `gorm:"foreignkey:OrderHistoryID;auto_preload:true"`

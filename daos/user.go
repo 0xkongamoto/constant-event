@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/constant-money/constant-event/models"
+	wm "github.com/constant-money/constant-web-api/models"
 	"github.com/jinzhu/gorm"
 )
 
@@ -20,27 +21,27 @@ func InitUserDAO(database *gorm.DB) *UserDAO {
 }
 
 // GetAllUserWalletPending : ...
-func (ud *UserDAO) GetAllUserWalletPending() ([]models.UserWallet, error) {
-	userWallets := []models.UserWallet{}
-	err := models.Database().Where("status != ? AND expired_at > ?", models.UserWalletStatusDone, time.Now().UnixNano()/int64(time.Second)).Find(&userWallets).Error
+func (ud *UserDAO) GetAllUserWalletPending() ([]wm.UserWallet, error) {
+	userWallets := []wm.UserWallet{}
+	err := models.Database().Where("status != ? AND expired_at > ?", wm.UserWalletStatusDone, time.Now().UnixNano()/int64(time.Second)).Find(&userWallets).Error
 	return userWallets, err
 }
 
 // GetAllUsersNeedCheckKYC : ...
-func (ud *UserDAO) GetAllUsersNeedCheckKYC() (*[]models.User, error) {
-	users := []models.User{}
+func (ud *UserDAO) GetAllUsersNeedCheckKYC() (*[]wm.User, error) {
+	users := []wm.User{}
 	err := models.Database().Where("(verified_level = 4 OR verified_level = 5) AND primetrust_contact_id <> '' ").Find(&users).Error
 	return &users, err
 }
 
 // Update : user wallet
-func (ud *UserDAO) Update(uw *models.UserWallet) error {
+func (ud *UserDAO) Update(uw *wm.UserWallet) error {
 	err := models.Database().Save(uw).Error
 	return err
 }
 
 // UpdateVerifiedLevel : user
-func (ud *UserDAO) UpdateVerifiedLevel(u *models.User) error {
+func (ud *UserDAO) UpdateVerifiedLevel(u *wm.User) error {
 	err := models.Database().Save(u).Error
 	return err
 }
