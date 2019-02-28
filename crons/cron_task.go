@@ -12,6 +12,7 @@ import (
 	"github.com/constant-money/constant-event/daos"
 	"github.com/constant-money/constant-event/ethereum"
 	"github.com/constant-money/constant-event/models"
+	wm "github.com/constant-money/constant-web-api/models"
 	"github.com/jinzhu/gorm"
 	"github.com/mitchellh/mapstructure"
 )
@@ -74,7 +75,7 @@ func (cr *CronTask) ScanTask() {
 
 	for _, task := range tasks {
 		// TODO: check task's MasterAddr is ready
-		errUpdate := cr.updateTask(&task, masterAddrReady.Address, models.TaskStatusProgressing)
+		errUpdate := cr.updateTask(&task, masterAddrReady.Address, wm.TaskStatusProgressing)
 		if errUpdate != nil {
 			continue
 		}
@@ -97,7 +98,7 @@ func (cr *CronTask) ScanTask() {
 	}
 }
 
-func (cr *CronTask) handleSmartContractMethod(dataJSON map[string]interface{}, task *models.Task, masterAddrReady *models.MasterAddress, priKey string, etherService *ethereum.Ethereum, method models.TaskMethod) (string, error) {
+func (cr *CronTask) handleSmartContractMethod(dataJSON map[string]interface{}, task *wm.Task, masterAddrReady *models.MasterAddress, priKey string, etherService *ethereum.Ethereum, method wm.TaskMethod) (string, error) {
 	dataJSON["ContractAddress"] = task.ContractAddress
 	dataJSON["ContractName"] = task.ContractName
 	dataJSON["MasterAddr"] = masterAddrReady.Address
@@ -110,26 +111,26 @@ func (cr *CronTask) handleSmartContractMethod(dataJSON map[string]interface{}, t
 
 	switch task.Method {
 
-	case models.TaskMethodPurchase:
+	case wm.TaskMethodPurchase:
 		var data models.PurchaseParams
 		mapstructure.Decode(dataJSON, &data)
 		tnxHash, errOnchain = cr.handlePurchase(&data, task.ID, constantService)
 
-	case models.TaskMethodRedeem:
+	case wm.TaskMethodRedeem:
 		var data models.RedeemParams
 		mapstructure.Decode(dataJSON, &data)
 		tnxHash, errOnchain = cr.handleRedeem(&data, task.ID, constantService)
 
-	case models.TaskMethodTransferByAdmin:
+	case wm.TaskMethodTransferByAdmin:
 		var data models.TransferByAdminParams
 		mapstructure.Decode(dataJSON, &data)
 		tnxHash, errOnchain = cr.handleTransferByAdmin(&data, task.ID, constantService)
 	}
 
-	var taskStatus models.TaskStatus
+	var taskStatus wm.TaskStatus
 
-	if taskStatus = models.TaskStatusSuccess; errOnchain != nil {
-		taskStatus = models.TaskStatusFailed
+	if taskStatus = wm.TaskStatusSuccess; errOnchain != nil {
+		taskStatus = wm.TaskStatusFailed
 		dataJSON["Err"] = errOnchain.Error()
 	}
 	dataStr, _ := json.Marshal(dataJSON)
@@ -173,7 +174,7 @@ func (cr *CronTask) handleTransferByAdmin(params *models.TransferByAdminParams, 
 	return tnxHash, err
 }
 
-func (cr *CronTask) updateTask(task *models.Task, masterAddr string, status models.TaskStatus) error {
+func (cr *CronTask) updateTask(task *wm.Task, masterAddr string, status wm.TaskStatus) error {
 	errTx := models.WithTransaction(func(tx *gorm.DB) error {
 		task.Status = status
 		task.MasterAddress = masterAddr
