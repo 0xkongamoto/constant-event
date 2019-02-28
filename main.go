@@ -180,12 +180,22 @@ func main() {
 	collateralLoan := crons.NewCollateralLoan(collateralLoanDAO, conf)
 	collateralLoanCron.AddFunc("@every 10s", func() {
 		fmt.Println("collateral loan run every 10s")
-		if !collateralLoan.IsRunning {
-			collateralLoan.IsRunning = true
+		if !collateralLoan.IsRunningAmount {
+			collateralLoan.IsRunningAmount = true
 			collateralLoan.ScanCollateralAmount()
-			collateralLoan.IsRunning = false
+			collateralLoan.IsRunningAmount = false
 		} else {
-			fmt.Println("collateral loan is running")
+			fmt.Println("collateral loan amount is running")
+		}
+	})
+	collateralLoanCron.AddFunc("@every 1h", func() {
+		fmt.Println("collateral loan remind run every 1h")
+		if !collateralLoan.IsRunningRemind {
+			collateralLoan.IsRunningRemind = true
+			collateralLoan.ScanCollateralRemind()
+			collateralLoan.IsRunningRemind = false
+		} else {
+			fmt.Println("collateral loan remind is running")
 		}
 	})
 	collateralLoanCron.Start()
