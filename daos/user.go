@@ -1,8 +1,6 @@
 package daos
 
 import (
-	"time"
-
 	"github.com/constant-money/constant-event/models"
 	wm "github.com/constant-money/constant-web-api/models"
 	"github.com/jinzhu/gorm"
@@ -23,8 +21,7 @@ func InitUserDAO(database *gorm.DB) *UserDAO {
 // GetAllUserWalletPending : ...
 func (ud *UserDAO) GetAllUserWalletPending() ([]wm.UserWallet, error) {
 	userWallets := []wm.UserWallet{}
-	err := models.Database().Where("status != ? AND expired_at > ?", wm.UserWalletStatusDone, time.Now().UnixNano()/int64(time.Second)).Find(&userWallets).Error
-	return userWallets, err
+	return userWallets, nil
 }
 
 // GetAllUsersNeedCheckKYC : ...
