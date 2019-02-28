@@ -1,6 +1,8 @@
 package crons
 
 import (
+	"log"
+
 	"github.com/constant-money/constant-event/config"
 	"github.com/constant-money/constant-event/daos"
 	"github.com/constant-money/constant-event/services"
@@ -47,13 +49,13 @@ func (uc *UserCron) ScanKYC() {
 
 // ScanWallets : ...
 func (uc *UserCron) ScanWallets() {
-	userWallets, _ := uc.ud.GetAllUserWalletPending()
+	userWallets, _ := uc.ud.AllUserWallets("import_constant")
 	for i := 0; i < len(userWallets); i++ {
-		// uw := userWallets[i]
-		// err := uc.userSrv.ScanTnx(uw.ID, strings.ToLower(uw.WalletAddress), uw.Metadata, uw.ExpiredAt, uw.StartedAt)
-		// if err != nil {
-		// 	log.Println(err.Error())
-		// 	return
-		// }
+		uw := userWallets[i]
+		err := uc.userSrv.ScanBalanceOf(uw)
+		if err != nil {
+			log.Println(err.Error())
+			return
+		}
 	}
 }

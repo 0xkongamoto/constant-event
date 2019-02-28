@@ -1,9 +1,12 @@
 package daos
 
 import (
+	"strings"
+
 	"github.com/constant-money/constant-event/models"
 	wm "github.com/constant-money/constant-web-api/models"
 	"github.com/jinzhu/gorm"
+	"github.com/pkg/errors"
 )
 
 // UserDAO :
@@ -18,9 +21,12 @@ func InitUserDAO(database *gorm.DB) *UserDAO {
 	}
 }
 
-// GetAllUserWalletPending : ...
-func (ud *UserDAO) GetAllUserWalletPending() ([]wm.UserWallet, error) {
-	userWallets := []wm.UserWallet{}
+// AllUserWallets : metadata
+func (ud *UserDAO) AllUserWallets(metadata string) ([]*wm.UserWallet, error) {
+	var userWallets []*wm.UserWallet
+	if err := models.Database().Where("lower(metadata) = ? and source = ethereum", strings.ToLower(metadata)).Find(&userWallets).Error; err != nil {
+		return nil, errors.Wrap(err, "db.Where.Find")
+	}
 	return userWallets, nil
 }
 
