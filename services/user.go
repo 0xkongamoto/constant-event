@@ -75,7 +75,7 @@ func (us *UserService) sendUserWalletHook(userWalletID uint, walletAddr string, 
 
 // ScanBalanceOf : ...
 func (us *UserService) ScanBalanceOf(userWallet *wm.UserWallet) error {
-
+	log.Println("DEBUG --> ", userWallet.WalletAddress)
 	return nil
 }
 

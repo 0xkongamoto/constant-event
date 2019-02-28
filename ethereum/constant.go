@@ -5,6 +5,7 @@ import (
 	"math/big"
 
 	contract "github.com/constant-money/constant-event/ethereum/contract"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 )
 
@@ -105,4 +106,21 @@ func (c *Constant) TransferByAdmin(fromAddr string, toAddr string, value *big.In
 		return "", err
 	}
 	return tx.Hash().Hex(), nil
+}
+
+// BalanceOf : address
+func (c *Constant) BalanceOf(address string) (*big.Int, error) {
+	instance, err := c.GetInstance()
+	if err != nil {
+		log.Fatal(err)
+		return nil, err
+	}
+
+	bal, err := instance.BalanceOf(&bind.CallOpts{}, common.HexToAddress(address))
+
+	if err != nil {
+		log.Fatal(err)
+		return nil, err
+	}
+	return bal, nil
 }
