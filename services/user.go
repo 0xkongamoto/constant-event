@@ -10,38 +10,22 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/constant-money/constant-event/config"
-	"github.com/constant-money/constant-event/daos"
 	"github.com/constant-money/constant-web-api/services/3rd/primetrust"
 )
 
 // UserService : struct
 type UserService struct {
-	ud         *daos.UserDAO
-	conf       *config.Config
-	primetrust *primetrust.Primetrust
-	Running    bool
+	primetrust   *primetrust.Primetrust
+	hookEndpoint string
+	ptEndpoint   string
 }
 
 // InitUserService :
-func InitUserService(userDao *daos.UserDAO, primetrust *primetrust.Primetrust, cf *config.Config) *UserService {
+func InitUserService(primetrust *primetrust.Primetrust, hookEndpoint string, ptEndpoint string) *UserService {
 	return &UserService{
-		ud:         userDao,
-		primetrust: primetrust,
-		conf:       cf,
-	}
-}
-
-// ScanWallets : ...
-func (us *UserService) ScanWallets() {
-	userWallets, _ := us.ud.GetAllUserWalletPending()
-	for i := 0; i < len(userWallets); i++ {
-		uw := userWallets[i]
-		err := us.scanTnx(uw.ID, strings.ToLower(uw.WalletAddress), uw.Metadata, uw.ExpiredAt, uw.StartedAt)
-		if err != nil {
-			log.Println(err.Error())
-			return
-		}
+		primetrust:   primetrust,
+		hookEndpoint: hookEndpoint,
+		ptEndpoint:   ptEndpoint,
 	}
 }
 
@@ -55,7 +39,7 @@ func (us *UserService) sendUserWalletHook(userWalletID uint, walletAddr string, 
 		"id":       userWalletID,
 	}
 
-	endpoint := us.conf.HookEndpoint
+	endpoint := us.hookEndpoint
 	endpoint = fmt.Sprintf("%s", endpoint)
 	jsonValue, _ := json.Marshal(jsonData)
 
@@ -88,7 +72,8 @@ func (us *UserService) sendUserWalletHook(userWalletID uint, walletAddr string, 
 	}
 }
 
-func (us *UserService) scanTnx(ID uint, walletAddr string, metaData string, expiredAt int64, startedAt int64) error {
+// ScanTnx : ...
+func (us *UserService) ScanTnx(ID uint, walletAddr string, metaData string, expiredAt int64, startedAt int64) error {
 	// masterAddrArr := us.conf.MasterAddresses
 	// page := 1
 	// recordPerPage := 100
@@ -187,27 +172,8 @@ func (us *UserService) scanTnx(ID uint, walletAddr string, metaData string, expi
 // 	return false, nil
 // }
 
-// ScanKYC : ...
-func (us *UserService) ScanKYC() {
-	users, err := us.ud.GetAllUsersNeedCheckKYC()
-	if err == nil {
-		for i := 0; i < len(*users); i++ {
-			u := (*users)[i]
-			status, errStr := us.checkPrimetrustContactID(u.PrimetrustContactID)
-			if errStr != "404" {
-				if status {
-					us.sendKYCHook(u.ID, status, errStr)
-				} else {
-					if u.VerifiedLevel == 4 {
-						us.sendKYCHook(u.ID, status, errStr)
-					}
-				}
-			}
-		}
-	}
-}
-
-func (us *UserService) checkPrimetrustContactID(ID string) (bool, string) {
+// CheckPrimetrustContactID : contactID
+func (us *UserService) CheckPrimetrustContactID(ID string) (bool, string) {
 	response, err := us.primetrust.GetContactByID(ID)
 
 	if err != nil {
@@ -234,9 +200,9 @@ func (us *UserService) checkPrimetrustContactID(ID string) (bool, string) {
 						related := links.Related
 						if related != "" {
 							arr := strings.Split(related, "/v2")
-							end := us.conf.PrimetrustEndpoint + related
+							end := us.ptEndpoint + related
 							if len(arr) == 2 {
-								end = us.conf.PrimetrustEndpoint + arr[1]
+								end = us.ptEndpoint + arr[1]
 							}
 							req, _ := http.NewRequest("GET", end, nil)
 							token, err := us.primetrust.GetToken()
@@ -266,7 +232,8 @@ func (us *UserService) checkPrimetrustContactID(ID string) (bool, string) {
 
 }
 
-func (us *UserService) sendKYCHook(userID uint, primetrustStatus bool, primetrustError string) error {
+// SendKYCHook : userID, primetrustStatus, primetrustError
+func (us *UserService) SendKYCHook(userID uint, primetrustStatus bool, primetrustError string) error {
 	jsonKYCData := make(map[string]interface{})
 	jsonKYCData["PrimetrustContactStatus"] = primetrustStatus
 	jsonKYCData["PrimetrustContactError"] = primetrustError
@@ -276,7 +243,7 @@ func (us *UserService) sendKYCHook(userID uint, primetrustStatus bool, primetrus
 	jsonData["type"] = 4 /* WebhookTypeKYC */
 	jsonData["data"] = jsonKYCData
 
-	endpoint := us.conf.HookEndpoint
+	endpoint := us.hookEndpoint
 	endpoint = fmt.Sprintf("%s", endpoint)
 	jsonValue, _ := json.Marshal(jsonData)
 

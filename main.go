@@ -113,20 +113,36 @@ func main() {
 
 	// add user wallet cron
 	userDAO := daos.InitUserDAO(models.Database())
-	userSrv := services.InitUserService(userDAO, pt, conf)
-	userCron := cron.New()
-	userCron.AddFunc("@every 30m", func() {
-		fmt.Println("scan user service every 30m")
-		if !userSrv.Running {
-			userSrv.Running = true
-			userSrv.ScanKYC()
-			userSrv.ScanWallets()
-			userSrv.Running = false
+	userSrv := services.InitUserService(pt, conf.HookEndpoint, conf.PrimetrustEndpoint)
+
+	ucWallet := crons.InitUserCron(userDAO, pt, userSrv, conf)
+	userWalletsCron := cron.New()
+	userWalletsCron.AddFunc("@every 15s", func() {
+		fmt.Println("scan user wallet service every 15s")
+		if !ucWallet.Running {
+			ucWallet.Running = true
+			ucWallet.ScanWallets()
+			ucWallet.Running = false
 		} else {
-			fmt.Println("scan user service is running")
+			fmt.Println("scan user wallet service is running")
 		}
 	})
-	userCron.Start()
+	userWalletsCron.Start()
+
+	// add user kyc cron
+	ucKYC := crons.InitUserCron(userDAO, pt, userSrv, conf)
+	userKYCCron := cron.New()
+	userKYCCron.AddFunc("@every 30m", func() {
+		fmt.Println("scan user kyc service every 30m")
+		if !ucKYC.Running {
+			ucKYC.Running = true
+			ucKYC.ScanKYC()
+			ucKYC.Running = false
+		} else {
+			fmt.Println("scan user kyc service is running")
+		}
+	})
+	userKYCCron.Start()
 
 	// add task cron
 	crTask := crons.NewCronTask(1, &daos.MasterAddressDAO{}, &daos.TaskDAO{}, &daos.TxDAO{}, config.GetConfig())
