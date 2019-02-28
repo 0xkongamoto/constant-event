@@ -43,11 +43,11 @@ func (h HookService) Event(jsonData map[string]interface{}) error {
 
 	if ok && status.(float64) > 0 {
 		return nil
-	} else {
-		errStr := "Unknown"
-		if hasMessage {
-			errStr = message.(string)
-		}
-		return errors.New(errStr)
 	}
+	errStr := "Unknown"
+	if hasMessage {
+		errStr = message.(string)
+	}
+	return errors.New(errStr)
+
 }

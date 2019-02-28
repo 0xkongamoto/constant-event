@@ -1,7 +1,7 @@
 package daos
 
 import (
-	"github.com/constant-money/constant-event/models"
+	wm "github.com/constant-money/constant-web-api/models"
 	"github.com/jinzhu/gorm"
 	"github.com/pkg/errors"
 )
@@ -17,13 +17,20 @@ func InitCollateralLoanDAO(database *gorm.DB) *CollateralLoanDAO {
 	}
 }
 
-func (cl *CollateralLoanDAO) FindAllPending(limit int) ([]*models.CollateralLoan, error) {
+func (cl *CollateralLoanDAO) Update(tx *gorm.DB, model *wm.CollateralLoan) error {
+	if err := tx.Save(model).Error; err != nil {
+		return errors.Wrap(err, "tx.Update.CollateralLoan")
+	}
+	return nil
+}
+
+func (cl *CollateralLoanDAO) FindAllPending(lastIndex uint, limit int) ([]*wm.CollateralLoan, error) {
 	var (
-		collateralLoans []*models.CollateralLoan
+		collateralLoans []*wm.CollateralLoan
 	)
 
 	query := cl.db.Table("collateral_loans").
-		Where("status = ?", models.CollateralLoanStatusPending).
+		Where("status = ? AND id > ?", wm.CollateralLoanStatusPending, lastIndex).
 		Order("id desc").
 		Limit(limit)
 
@@ -33,9 +40,26 @@ func (cl *CollateralLoanDAO) FindAllPending(limit int) ([]*models.CollateralLoan
 	return collateralLoans, nil
 }
 
-func (cl *CollateralLoanDAO) Update(tx *gorm.DB, model *models.CollateralLoan) error {
-	if err := tx.Save(model).Error; err != nil {
-		return errors.Wrap(err, "tx.Update.CollateralLoan")
+func (cl *CollateralLoanDAO) FindAllPayingByDate(dayNumber uint, page int, limit int) ([]*wm.CollateralLoan, error) {
+	var (
+		collateralLoans []*wm.CollateralLoan
+		offset          = page*limit - limit
+	)
+
+	query := cl.db.Raw(`SELECT *
+						FROM collateral_loans 
+						WHERE 
+							status = ? AND 
+							MONTH(next_pay_at) = MONTH(now()  + interval ? day) AND 
+							YEAR(next_pay_at) = YEAR(now()  + interval ? day) AND 
+							DAY(next_pay_at) = DAY(now() + interval ? day) AND
+							DAY(next_pay_at) = DAY(now() + interval ? day) AND
+							HOUR(next_pay_at) = HOUR(now()) 
+						LIMIT ? 
+						OFFSET ?`, wm.CollateralLoanStatusPayingInterest, dayNumber, dayNumber, dayNumber, dayNumber, limit, offset)
+
+	if err := query.Scan(&collateralLoans).Error; err != nil {
+		return nil, errors.Wrap(err, "db.Find")
 	}
-	return nil
+	return collateralLoans, nil
 }
