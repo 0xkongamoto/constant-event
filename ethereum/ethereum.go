@@ -21,20 +21,18 @@ const GasPriceDefault = 30000000000
 
 type Ethereum struct {
 	EthChainEnpoint string
-	SimpleLoanOwner string
-	SimpleLoadAddr  string
 	client          *ethclient.Client
 }
 
+// Init : config
 func Init(conf *config.Config) *Ethereum {
 	service := &Ethereum{
 		EthChainEnpoint: conf.ChainURL,
-		// SimpleLoanOwner: conf.SimpleLoanOwner,
-		// SimpleLoadAddr:  conf.SimpleLoanAddr,
 	}
 	return service
 }
 
+// GetClient : ...
 func (s *Ethereum) GetClient() (*ethclient.Client, error) {
 	if s.client != nil {
 		return s.client, nil

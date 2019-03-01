@@ -5,6 +5,7 @@ import (
 	"math/big"
 
 	contract "github.com/constant-money/constant-event/ethereum/contract"
+
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 )
@@ -16,7 +17,7 @@ type Constant struct {
 	ethereumService         *Ethereum
 }
 
-// InitConstant :
+// InitConstant : contractAddr, ownerPriKey, ethereum
 func InitConstant(contractAddr string, ownerPriKey string, ethereum *Ethereum) *Constant {
 	c := &Constant{
 		ContractAddress:         contractAddr,
@@ -26,18 +27,40 @@ func InitConstant(contractAddr string, ownerPriKey string, ethereum *Ethereum) *
 	return c
 }
 
-// GetInstance : Constant
-func (c *Constant) GetInstance() (*contract.Constant, error) {
-	address := common.HexToAddress(c.ContractAddress)
-	client, _ := c.ethereumService.GetClient()
-	instance, err := contract.NewConstant(address, client)
-	if err != nil {
-		return nil, err
+// InitConstantWithEthereumSrv : ethereum
+func InitConstantWithEthereumSrv(ethereum *Ethereum) *Constant {
+	c := &Constant{
+		ethereumService: ethereum,
 	}
-
-	return instance, nil
+	return c
 }
 
+// GetInstance : Constant
+func (c *Constant) GetInstance() (*contract.Constant, error) {
+	if c.isValid() {
+		address := common.HexToAddress(c.ContractAddress)
+		client, _ := c.ethereumService.GetClient()
+		instance, err := contract.NewConstant(address, client)
+		if err != nil {
+			return nil, err
+		}
+
+		return instance, nil
+	}
+
+	return nil, nil
+}
+
+func (c *Constant) isValid() bool {
+	if c.ContractAddress == "" ||
+		c.ContractOwnerPrivateKey == "" {
+		return false
+	}
+
+	return true
+}
+
+// Purchase : address, value, offchain
 func (c *Constant) Purchase(address string, value *big.Int, offchain string) (string, error) {
 	instance, err := c.GetInstance()
 	if err != nil {

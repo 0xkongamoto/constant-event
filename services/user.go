@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/constant-money/constant-event/ethereum"
 	wm "github.com/constant-money/constant-web-api/models"
 	"github.com/constant-money/constant-web-api/services/3rd/primetrust"
 )
@@ -17,14 +18,16 @@ import (
 // UserService : struct
 type UserService struct {
 	primetrust   *primetrust.Primetrust
+	constant     *ethereum.Constant
 	hookEndpoint string
 	ptEndpoint   string
 }
 
 // InitUserService :
-func InitUserService(primetrust *primetrust.Primetrust, hookEndpoint string, ptEndpoint string) *UserService {
+func InitUserService(primetrust *primetrust.Primetrust, constant *ethereum.Constant, hookEndpoint string, ptEndpoint string) *UserService {
 	return &UserService{
 		primetrust:   primetrust,
+		constant:     constant,
 		hookEndpoint: hookEndpoint,
 		ptEndpoint:   ptEndpoint,
 	}
@@ -75,8 +78,17 @@ func (us *UserService) sendUserWalletHook(userWalletID uint, walletAddr string, 
 
 // ScanBalanceOf : ...
 func (us *UserService) ScanBalanceOf(userWallet *wm.UserWallet) error {
-	log.Println("DEBUG --> ", userWallet.WalletAddress)
-	return nil
+	if userWallet != nil {
+		walletAddress := userWallet.WalletAddress
+		if walletAddress != "" {
+			bal, err := us.constant.BalanceOf(walletAddress)
+			if err != nil {
+				return err
+			}
+			fmt.Println("WTF = ", bal.Uint64())
+		}
+	}
+	return errors.New("Invalid wallet address")
 }
 
 // CheckPrimetrustContactID : contactID

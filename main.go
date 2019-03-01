@@ -9,6 +9,7 @@ import (
 	"github.com/constant-money/constant-event/config"
 	"github.com/constant-money/constant-event/crons"
 	"github.com/constant-money/constant-event/daos"
+	"github.com/constant-money/constant-event/ethereum"
 	"github.com/constant-money/constant-event/models"
 	"github.com/constant-money/constant-event/services"
 	"github.com/robfig/cron"
@@ -113,12 +114,15 @@ func main() {
 
 	// add user wallet cron
 	userDAO := daos.InitUserDAO(models.Database())
-	userSrv := services.InitUserService(pt, conf.HookEndpoint, conf.PrimetrustEndpoint)
+
+	etherService := ethereum.Init(conf)
+	constant := ethereum.InitConstantWithEthereumSrv(etherService)
+	userSrv := services.InitUserService(pt, constant, conf.HookEndpoint, conf.PrimetrustEndpoint)
 
 	ucWallet := crons.InitUserCron(userDAO, pt, userSrv, conf)
 	userWalletsCron := cron.New()
-	userWalletsCron.AddFunc("@every 15s", func() {
-		fmt.Println("scan user wallet service every 15s")
+	userWalletsCron.AddFunc("@every 2s", func() {
+		fmt.Println("scan user wallet service every 2s")
 		if !ucWallet.Running {
 			ucWallet.Running = true
 			ucWallet.ScanWallets()

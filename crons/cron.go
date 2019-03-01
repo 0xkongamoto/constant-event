@@ -10,6 +10,7 @@ import (
 	"github.com/constant-money/constant-event/models"
 	"github.com/constant-money/constant-event/services"
 	"github.com/constant-money/constant-event/utils"
+	wm "github.com/constant-money/constant-web-api/models"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/jinzhu/gorm"
@@ -153,7 +154,7 @@ func (cr *Cron) scanWorker(id int, etherClient *ethclient.Client, jobs <-chan mo
 			} else {
 				log.Printf("Tx %s has receipt, status %d\n", transaction.Hash, receipt.Status)
 
-				cr.updateMasterAddrStatus(transaction.Hash, models.MasterAddressStatusReady)
+				cr.updateMasterAddrStatus(transaction.Hash, wm.MasterAddressStatusReady)
 
 				if receipt.Status == 0 {
 					// case fail
@@ -185,7 +186,7 @@ func (cr *Cron) scanWorker(id int, etherClient *ethclient.Client, jobs <-chan mo
 					// case success
 					log.Printf("Tx %s has receipt, logs %d\n", transaction.Hash, len(receipt.Logs))
 
-					cr.updateMasterAddrStatus(transaction.Hash, models.MasterAddressStatusReady)
+					cr.updateMasterAddrStatus(transaction.Hash, wm.MasterAddressStatusReady)
 
 					if len(receipt.Logs) > 0 {
 						for _, l := range receipt.Logs {
@@ -226,9 +227,9 @@ func (cr *Cron) scanWorker(id int, etherClient *ethclient.Client, jobs <-chan mo
 	}
 }
 
-func (cr *Cron) updateMasterAddrStatus(tnxHash string, status models.MasterAddressStatus) error {
+func (cr *Cron) updateMasterAddrStatus(tnxHash string, status wm.MasterAddressStatus) error {
 	errTx := models.WithTransaction(func(tx *gorm.DB) error {
-		if err := cr.masterAddressDAO.UpdateStatusByTnxHash(tnxHash, models.MasterAddressStatusReady, tx); err != nil {
+		if err := cr.masterAddressDAO.UpdateStatusByTnxHash(tnxHash, wm.MasterAddressStatusReady, tx); err != nil {
 			log.Println("Update Master Address Ready error", err.Error())
 			return err
 		}

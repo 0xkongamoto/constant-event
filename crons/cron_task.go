@@ -90,15 +90,15 @@ func (cr *CronTask) ScanTask() {
 		var errOnchain error
 		var tnxHash string
 
-		tnxHash, errOnchain = cr.handleSmartContractMethod(dataJSON, &task, &masterAddrReady, priKey, etherService, task.Method)
+		tnxHash, errOnchain = cr.handleSmartContractMethod(dataJSON, &task, masterAddrReady, priKey, etherService, task.Method)
 
 		if errOnchain == nil {
-			cr.updateMasterAddrStatus(&masterAddrReady, models.MasterAddressStatusProgressing, tnxHash)
+			cr.updateMasterAddrStatus(masterAddrReady, wm.MasterAddressStatusProgressing, tnxHash)
 		}
 	}
 }
 
-func (cr *CronTask) handleSmartContractMethod(dataJSON map[string]interface{}, task *wm.Task, masterAddrReady *models.MasterAddress, priKey string, etherService *ethereum.Ethereum, method wm.TaskMethod) (string, error) {
+func (cr *CronTask) handleSmartContractMethod(dataJSON map[string]interface{}, task *wm.Task, masterAddrReady *wm.MasterAddress, priKey string, etherService *ethereum.Ethereum, method wm.TaskMethod) (string, error) {
 	dataJSON["ContractAddress"] = task.ContractAddress
 	dataJSON["ContractName"] = task.ContractName
 	dataJSON["MasterAddr"] = masterAddrReady.Address
@@ -192,7 +192,7 @@ func (cr *CronTask) updateTask(task *wm.Task, masterAddr string, status wm.TaskS
 	return errTx
 }
 
-func (cr *CronTask) updateMasterAddrStatus(masterAddr *models.MasterAddress, status models.MasterAddressStatus, tnxHash string) error {
+func (cr *CronTask) updateMasterAddrStatus(masterAddr *wm.MasterAddress, status wm.MasterAddressStatus, tnxHash string) error {
 	errTx := models.WithTransaction(func(tx *gorm.DB) error {
 		masterAddr.Status = status
 
