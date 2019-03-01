@@ -10,85 +10,23 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/constant-money/constant-event/ethereum"
-	wm "github.com/constant-money/constant-web-api/models"
 	"github.com/constant-money/constant-web-api/services/3rd/primetrust"
 )
 
 // UserService : struct
 type UserService struct {
 	primetrust   *primetrust.Primetrust
-	constant     *ethereum.Constant
 	hookEndpoint string
 	ptEndpoint   string
 }
 
 // InitUserService :
-func InitUserService(primetrust *primetrust.Primetrust, constant *ethereum.Constant, hookEndpoint string, ptEndpoint string) *UserService {
+func InitUserService(primetrust *primetrust.Primetrust, hookEndpoint string, ptEndpoint string) *UserService {
 	return &UserService{
 		primetrust:   primetrust,
-		constant:     constant,
 		hookEndpoint: hookEndpoint,
 		ptEndpoint:   ptEndpoint,
 	}
-}
-
-func (us *UserService) sendUserWalletHook(userWalletID uint, walletAddr string, masterAddr string, metaData string) error {
-	jsonData := make(map[string]interface{})
-	jsonData["type"] = 3
-	jsonData["data"] = map[string]interface{}{
-		"from":     walletAddr,
-		"to":       masterAddr,
-		"metaData": metaData,
-		"id":       userWalletID,
-	}
-
-	endpoint := us.hookEndpoint
-	endpoint = fmt.Sprintf("%s", endpoint)
-	jsonValue, _ := json.Marshal(jsonData)
-
-	request, _ := http.NewRequest("POST", endpoint, bytes.NewBuffer(jsonValue))
-	request.Header.Set("Content-Type", "application/json")
-
-	client := &http.Client{}
-	response, err := client.Do(request)
-	if err != nil {
-		log.Println(err.Error())
-		return err
-	}
-
-	b, _ := ioutil.ReadAll(response.Body)
-
-	var data map[string]interface{}
-	json.Unmarshal(b, &data)
-
-	status, ok := data["status"]
-	message, hasMessage := data["message"]
-
-	if ok && status.(float64) > 0 {
-		return nil
-	} else {
-		errStr := "Unknown"
-		if hasMessage {
-			errStr = message.(string)
-		}
-		return errors.New(errStr)
-	}
-}
-
-// ScanBalanceOf : ...
-func (us *UserService) ScanBalanceOf(userWallet *wm.UserWallet) error {
-	if userWallet != nil {
-		walletAddress := userWallet.WalletAddress
-		if walletAddress != "" {
-			bal, err := us.constant.BalanceOf(walletAddress)
-			if err != nil {
-				return err
-			}
-			fmt.Println("WTF = ", bal.Uint64())
-		}
-	}
-	return errors.New("Invalid wallet address")
 }
 
 // CheckPrimetrustContactID : contactID
@@ -186,11 +124,11 @@ func (us *UserService) SendKYCHook(userID uint, primetrustStatus bool, primetrus
 
 	if ok && status.(float64) > 0 {
 		return nil
-	} else {
-		errStr := "Unknown"
-		if hasMessage {
-			errStr = message.(string)
-		}
-		return errors.New(errStr)
 	}
+
+	errStr := "Unknown"
+	if hasMessage {
+		errStr = message.(string)
+	}
+	return errors.New(errStr)
 }

@@ -1,6 +1,7 @@
 package ethereum
 
 import (
+	"fmt"
 	"log"
 	"math/big"
 
@@ -23,14 +24,6 @@ func InitConstant(contractAddr string, ownerPriKey string, ethereum *Ethereum) *
 		ContractAddress:         contractAddr,
 		ContractOwnerPrivateKey: ownerPriKey,
 		ethereumService:         ethereum,
-	}
-	return c
-}
-
-// InitConstantWithEthereumSrv : ethereum
-func InitConstantWithEthereumSrv(ethereum *Ethereum) *Constant {
-	c := &Constant{
-		ethereumService: ethereum,
 	}
 	return c
 }
@@ -133,8 +126,10 @@ func (c *Constant) TransferByAdmin(fromAddr string, toAddr string, value *big.In
 
 // BalanceOf : address
 func (c *Constant) BalanceOf(address string) (*big.Int, error) {
+	fmt.Println("HEEEELLLLOOO!!!!")
 	instance, err := c.GetInstance()
 	if err != nil {
+		fmt.Println("1")
 		log.Fatal(err)
 		return nil, err
 	}
@@ -142,6 +137,7 @@ func (c *Constant) BalanceOf(address string) (*big.Int, error) {
 	bal, err := instance.BalanceOf(&bind.CallOpts{}, common.HexToAddress(address))
 
 	if err != nil {
+		fmt.Println("2", err)
 		log.Fatal(err)
 		return nil, err
 	}

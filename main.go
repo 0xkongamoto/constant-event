@@ -113,28 +113,39 @@ func main() {
 	reserveCron.Start()
 
 	// add user wallet cron
+	masterAddressDAO := &daos.MasterAddressDAO{}
 	userDAO := daos.InitUserDAO(models.Database())
+	masterAddr, err := masterAddressDAO.GetMasterAddress()
 
-	etherService := ethereum.Init(conf)
-	constant := ethereum.InitConstantWithEthereumSrv(etherService)
-	userSrv := services.InitUserService(pt, constant, conf.HookEndpoint, conf.PrimetrustEndpoint)
+	if err == nil {
+		etherService := ethereum.Init(conf)
+		for _, value := range mapContracts {
+			constant := ethereum.InitConstant(value.Address, masterAddr.PriKey, etherService)
+			walletSrv := services.InitWalletService(constant, conf.HookEndpoint)
+			ucWallet := crons.InitWalletCron(userDAO, walletSrv)
 
-	ucWallet := crons.InitUserCron(userDAO, pt, userSrv, conf)
-	userWalletsCron := cron.New()
-	userWalletsCron.AddFunc("@every 2s", func() {
-		fmt.Println("scan user wallet service every 2s")
-		if !ucWallet.Running {
-			ucWallet.Running = true
-			ucWallet.ScanWallets()
-			ucWallet.Running = false
-		} else {
-			fmt.Println("scan user wallet service is running")
+			userWalletsCron := cron.New()
+			userWalletsCron.AddFunc("@every 2s", func() {
+				fmt.Println("scan user wallet service every 2s")
+				if !ucWallet.Running {
+					ucWallet.Running = true
+					ucWallet.ScanWallets()
+					ucWallet.Running = false
+				} else {
+					fmt.Println("scan user wallet service is running")
+				}
+			})
+			userWalletsCron.Start()
+			time.Sleep(time.Second * 1)
 		}
-	})
-	userWalletsCron.Start()
+
+	} else {
+		fmt.Println("cannot start user service cause there is no master address!!!")
+	}
 
 	// add user kyc cron
-	ucKYC := crons.InitUserCron(userDAO, pt, userSrv, conf)
+	userSrv := services.InitUserService(pt, conf.HookEndpoint, conf.PrimetrustEndpoint)
+	ucKYC := crons.InitUserCron(userDAO, userSrv)
 	userKYCCron := cron.New()
 	userKYCCron.AddFunc("@every 30m", func() {
 		fmt.Println("scan user kyc service every 30m")
@@ -149,7 +160,7 @@ func main() {
 	userKYCCron.Start()
 
 	// add task cron
-	crTask := crons.NewCronTask(1, &daos.MasterAddressDAO{}, &daos.TaskDAO{}, &daos.TxDAO{}, config.GetConfig())
+	crTask := crons.NewCronTask(1, masterAddressDAO, &daos.TaskDAO{}, &daos.TxDAO{}, config.GetConfig())
 	taskCron := cron.New()
 	taskCron.AddFunc("@every 5s", func() {
 		fmt.Println("scan task every 5s")

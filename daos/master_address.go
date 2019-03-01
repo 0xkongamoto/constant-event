@@ -28,6 +28,16 @@ func (ma *MasterAddressDAO) GetAdddressReady() (*wm.MasterAddress, error) {
 	return &masterAddress, nil
 }
 
+// GetMasterAddress : ...
+func (ma *MasterAddressDAO) GetMasterAddress() (*wm.MasterAddress, error) {
+	masterAddress := wm.MasterAddress{}
+	err := models.Database().First(&masterAddress).Error
+	if err != nil {
+		return nil, err
+	}
+	return &masterAddress, nil
+}
+
 func (ma *MasterAddressDAO) UpdateStatusByTnxHash(tnxHash string, status wm.MasterAddressStatus, tx *gorm.DB) (err error) {
 	var address wm.MasterAddress
 	err = tx.Model(&address).Where("last_tnx_hash = ?", strings.ToLower(tnxHash)).Update("status", status).Error
