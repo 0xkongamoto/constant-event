@@ -104,7 +104,7 @@ func (cr *CronTask) handleSmartContractMethod(dataJSON map[string]interface{}, t
 	dataJSON["MasterAddr"] = masterAddrReady.Address
 
 	// TODO: select InitContract's version by name
-	constantService := ethereum.InitConstant(task.ContractAddress, priKey, etherService)
+	constantService := ethereum.InitConstant(task.ContractAddress, priKey, cr.conf.CipherKey, etherService)
 
 	var tnxHash string
 	var errOnchain error

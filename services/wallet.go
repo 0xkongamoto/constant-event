@@ -1,11 +1,18 @@
 package services
 
 import (
+	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
+	"log"
+	"math/big"
+	"net/http"
 
 	"github.com/constant-money/constant-event/ethereum"
 	wm "github.com/constant-money/constant-web-api/models"
+	"github.com/constant-money/constant-web-api/serializers"
 )
 
 // WalletService : struct
@@ -22,61 +29,60 @@ func InitWalletService(constant *ethereum.Constant, hookEndpoint string) *Wallet
 	}
 }
 
-// func (us *UserService) sendUserWalletHook(userWalletID uint, walletAddr string, masterAddr string, metaData string) error {
-// 	jsonData := make(map[string]interface{})
-// 	jsonData["type"] = 3
-// 	jsonData["data"] = map[string]interface{}{
-// 		"from":     walletAddr,
-// 		"to":       masterAddr,
-// 		"metaData": metaData,
-// 		"id":       userWalletID,
-// 	}
+// SendUserWalletHook : ...
+func (ws *WalletService) SendUserWalletHook(userWallet *wm.UserWallet, constantAmount int64) error {
+	jsonData := make(map[string]interface{})
+	jsonData["type"] = serializers.WebhookTypeUserWallet
+	jsonData["data"] = map[string]interface{}{
+		"user":     userWallet.User.ID,
+		"wallet":   userWallet.WalletAddress,
+		"source":   userWallet.Source,
+		"constant": constantAmount,
+	}
 
-// 	endpoint := us.hookEndpoint
-// 	endpoint = fmt.Sprintf("%s", endpoint)
-// 	jsonValue, _ := json.Marshal(jsonData)
+	endpoint := ws.hookEndpoint
+	endpoint = fmt.Sprintf("%s", endpoint)
+	jsonValue, _ := json.Marshal(jsonData)
 
-// 	request, _ := http.NewRequest("POST", endpoint, bytes.NewBuffer(jsonValue))
-// 	request.Header.Set("Content-Type", "application/json")
+	request, _ := http.NewRequest("POST", endpoint, bytes.NewBuffer(jsonValue))
+	request.Header.Set("Content-Type", "application/json")
 
-// 	client := &http.Client{}
-// 	response, err := client.Do(request)
-// 	if err != nil {
-// 		log.Println(err.Error())
-// 		return err
-// 	}
+	client := &http.Client{}
+	response, err := client.Do(request)
+	if err != nil {
+		log.Println(err.Error())
+		return err
+	}
 
-// 	b, _ := ioutil.ReadAll(response.Body)
+	b, _ := ioutil.ReadAll(response.Body)
 
-// 	var data map[string]interface{}
-// 	json.Unmarshal(b, &data)
+	var data map[string]interface{}
+	json.Unmarshal(b, &data)
 
-// 	status, ok := data["status"]
-// 	message, hasMessage := data["message"]
+	status, ok := data["status"]
+	message, hasMessage := data["message"]
 
-// 	if ok && status.(float64) > 0 {
-// 		return nil
-// 	} else {
-// 		errStr := "Unknown"
-// 		if hasMessage {
-// 			errStr = message.(string)
-// 		}
-// 		return errors.New(errStr)
-// 	}
-// }
+	if ok && status.(float64) > 0 {
+		return nil
+	}
+	errStr := "Unknown"
+	if hasMessage {
+		errStr = message.(string)
+	}
+	return errors.New(errStr)
+}
 
 // ScanBalanceOf : ...
-func (ws *WalletService) ScanBalanceOf(userWallet *wm.UserWallet) error {
+func (ws *WalletService) ScanBalanceOf(userWallet *wm.UserWallet) (*big.Int, error) {
 	if userWallet != nil {
 		walletAddress := userWallet.WalletAddress
 		if walletAddress != "" {
 			bal, err := ws.constant.BalanceOf(walletAddress)
 			if err != nil {
-				return err
+				return nil, err
 			}
-			fmt.Println("WTF = ", bal.Uint64())
+			return bal, nil
 		}
-		return nil
 	}
-	return errors.New("Invalid wallet address")
+	return nil, errors.New("Invalid wallet address")
 }

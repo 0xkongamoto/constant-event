@@ -7,6 +7,7 @@ import (
 
 	contract "github.com/constant-money/constant-event/ethereum/contract"
 
+	helpers "github.com/constant-money/constant-web-api/helpers"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 )
@@ -19,13 +20,25 @@ type Constant struct {
 }
 
 // InitConstant : contractAddr, ownerPriKey, ethereum
-func InitConstant(contractAddr string, ownerPriKey string, ethereum *Ethereum) *Constant {
-	c := &Constant{
+func InitConstant(contractAddr string, ownerPriKey string, cipherKey string, ethereum *Ethereum) *Constant {
+	if cipherKey != "" {
+		priKey, err := helpers.DecryptToString(ownerPriKey, cipherKey)
+		if err != nil {
+			priKey = ownerPriKey
+		}
+
+		return &Constant{
+			ContractAddress:         contractAddr,
+			ContractOwnerPrivateKey: priKey,
+			ethereumService:         ethereum,
+		}
+	}
+
+	return &Constant{
 		ContractAddress:         contractAddr,
 		ContractOwnerPrivateKey: ownerPriKey,
 		ethereumService:         ethereum,
 	}
-	return c
 }
 
 // GetInstance : Constant

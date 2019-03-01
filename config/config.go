@@ -43,6 +43,7 @@ type Config struct {
 	PrimetrustAccountID string                `json:"primetrust_account_id"`
 	Contracts           []Contract            `json:"contracts"`
 	MasterAddresses     []MasterAddressConfig `json:"master_addresses"`
+	CipherKey           string                `json:"wallet_cipher_key"`
 }
 
 type Contract struct {

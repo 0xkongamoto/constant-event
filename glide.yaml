@@ -24,3 +24,4 @@ import:
 - package: github.com/mitchellh/mapstructure
   version: ^1.1.2
 - package: github.com/constant-money/constant-web-api
+- package: github.com/btcsuite/btcutil

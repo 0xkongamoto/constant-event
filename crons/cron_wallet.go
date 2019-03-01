@@ -1,7 +1,6 @@
 package crons
 
 import (
-	"fmt"
 	"log"
 
 	"github.com/constant-money/constant-event/daos"
@@ -26,13 +25,15 @@ func InitWalletCron(ud *daos.UserDAO, walletSrv *services.WalletService) *Wallet
 // ScanWallets : ...
 func (wc *WalletCron) ScanWallets() {
 	userWallets, _ := wc.ud.AllUserWallets("import_constant")
-	fmt.Println("Wallets = ", len(userWallets))
 	for i := 0; i < len(userWallets); i++ {
 		uw := userWallets[i]
-		err := wc.walletSrv.ScanBalanceOf(uw)
+		balance, err := wc.walletSrv.ScanBalanceOf(uw)
 		if err != nil {
 			log.Println(err.Error())
-			return
+		} else {
+			if balance.Int64() >= 0 {
+				wc.walletSrv.SendUserWalletHook(uw, balance.Int64())
+			}
 		}
 	}
 }

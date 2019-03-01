@@ -120,7 +120,7 @@ func main() {
 	if err == nil {
 		etherService := ethereum.Init(conf)
 		for _, value := range mapContracts {
-			constant := ethereum.InitConstant(value.Address, masterAddr.PriKey, etherService)
+			constant := ethereum.InitConstant(value.Address, masterAddr.PriKey, conf.CipherKey, etherService)
 			walletSrv := services.InitWalletService(constant, conf.HookEndpoint)
 			ucWallet := crons.InitWalletCron(userDAO, walletSrv)
 
