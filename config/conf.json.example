@@ -22,5 +22,6 @@
       "key": "0x123",
       "address": "0x123"
     }
-  ]
+  ],
+  "wallet_cipher_key": ""
 }
