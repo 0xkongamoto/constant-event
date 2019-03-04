@@ -45,18 +45,38 @@ func (cl *CollateralLoanDAO) FindAllPayingByDate(dayNumber uint, page int, limit
 		collateralLoans []*wm.CollateralLoan
 		offset          = page*limit - limit
 	)
+	// HOUR(next_pay_at) = HOUR(now())
+	query := cl.db.Raw(`SELECT *
+						FROM collateral_loans 
+						WHERE 
+							status = ? AND 
+							YEAR(next_pay_at) = YEAR(now()  + interval ? day) AND 
+							MONTH(next_pay_at) = MONTH(now()  + interval ? day) AND 
+							DAY(next_pay_at) = DAY(now() + interval ? day)
+						LIMIT ? 
+						OFFSET ?`, wm.CollateralLoanStatusPayingInterest, dayNumber, dayNumber, dayNumber, limit, offset)
+
+	if err := query.Scan(&collateralLoans).Error; err != nil {
+		return nil, errors.Wrap(err, "db.Find")
+	}
+	return collateralLoans, nil
+}
+
+func (cl *CollateralLoanDAO) FindAllPayingOnDay(page int, limit int) ([]*wm.CollateralLoan, error) {
+	var (
+		collateralLoans []*wm.CollateralLoan
+		offset          = page*limit - limit
+	)
 
 	query := cl.db.Raw(`SELECT *
 						FROM collateral_loans 
 						WHERE 
 							status = ? AND 
-							MONTH(next_pay_at) = MONTH(now()  + interval ? day) AND 
-							YEAR(next_pay_at) = YEAR(now()  + interval ? day) AND 
-							DAY(next_pay_at) = DAY(now() + interval ? day) AND
-							DAY(next_pay_at) = DAY(now() + interval ? day) AND
-							HOUR(next_pay_at) = HOUR(now()) 
+							YEAR(next_pay_at) = YEAR(now()) AND 
+							MONTH(next_pay_at) = MONTH(now()) AND 
+							DAY(next_pay_at) = DAY(now())
 						LIMIT ? 
-						OFFSET ?`, wm.CollateralLoanStatusPayingInterest, dayNumber, dayNumber, dayNumber, dayNumber, limit, offset)
+						OFFSET ?`, wm.CollateralLoanStatusAccepted, limit, offset)
 
 	if err := query.Scan(&collateralLoans).Error; err != nil {
 		return nil, errors.Wrap(err, "db.Find")

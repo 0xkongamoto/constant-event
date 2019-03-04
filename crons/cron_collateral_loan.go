@@ -18,16 +18,17 @@ import (
 
 // CollateralLoan :
 type CollateralLoan struct {
-	IsRunningAmount   bool
-	IsRunningRemind   bool
-	LastIndex         uint
-	collateralLoanDAO *daos.CollateralLoanDAO
-	conf              *config.Config
+	IsRunningAmount         bool
+	IsRunningRemind         bool
+	IsRunningPayingInterest bool
+	LastIndex               uint
+	collateralLoanDAO       *daos.CollateralLoanDAO
+	conf                    *config.Config
 }
 
 // NewCollateralLoan :
 func NewCollateralLoan(collateralLoanDAO *daos.CollateralLoanDAO, conf *config.Config) (cl CollateralLoan) {
-	cl = CollateralLoan{false, false, 0, collateralLoanDAO, config.GetConfig()}
+	cl = CollateralLoan{false, false, false, 0, collateralLoanDAO, config.GetConfig()}
 	return cl
 }
 
@@ -117,6 +118,41 @@ func (cl *CollateralLoan) remindByDate(dayNumber uint) {
 		err = hookService.Event(jsonWebhook)
 		if err != nil {
 			log.Println("Hook remind success error: ", err.Error())
+		}
+	}
+}
+
+// ScanCollateralPayingInterest :
+func (cl *CollateralLoan) ScanCollateralPayingInterest() {
+	var (
+		limit = 1
+		page  = 0
+	)
+	for {
+		page++
+		collateralLoans, err := cl.collateralLoanDAO.FindAllPayingOnDay(page, limit)
+		if err != nil {
+			log.Println("FindAllPayingOnDate error", err.Error())
+			return
+		}
+
+		if len(collateralLoans) == 0 {
+			return
+		}
+
+		for _, collateralLoan := range collateralLoans {
+			collateralLoan.Status = wm.CollateralLoanStatusPayingInterest
+			errTx := models.WithTransaction(func(tx *gorm.DB) error {
+				if err := cl.collateralLoanDAO.Update(tx, collateralLoan); err != nil {
+					log.Println("Update Collateral Loan status error", err.Error())
+					return err
+				}
+				return nil
+			})
+
+			if errTx != nil {
+				log.Println("DB Tnx Update Collateral Loan status error", errTx.Error())
+			}
 		}
 	}
 }
