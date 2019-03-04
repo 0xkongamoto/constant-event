@@ -12,6 +12,7 @@ import (
 	"github.com/constant-money/constant-event/daos"
 	"github.com/constant-money/constant-event/ethereum"
 	"github.com/constant-money/constant-event/models"
+	helpers "github.com/constant-money/constant-web-api/helpers"
 	wm "github.com/constant-money/constant-web-api/models"
 	"github.com/jinzhu/gorm"
 	"github.com/mitchellh/mapstructure"
@@ -38,18 +39,10 @@ func (cr *CronTask) ScanTask() {
 		return
 	}
 
-	flagAddrExist := false
-	priKey := ""
-	for _, masterAddr := range cr.conf.MasterAddresses {
-		if strings.ToLower(masterAddrReady.Address) == strings.ToLower(masterAddr.Address) {
-			flagAddrExist = true
-			priKey = masterAddr.Key
-			break
-		}
-	}
+	priKey, err := helpers.DecryptToString(masterAddrReady.PriKey, cr.conf.CipherKey)
 
-	if !flagAddrExist {
-		log.Println("Master address not found in config")
+	if err != nil {
+		log.Println("Master address not found prikey")
 		return
 	}
 
