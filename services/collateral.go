@@ -4,20 +4,22 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"time"
 
-	bedaos "github.com/constant-money/constant-web-api/daos"
+	"github.com/constant-money/constant-event/daos"
+	"github.com/constant-money/constant-event/models"
 	"github.com/jinzhu/gorm"
 )
 
 type CollateralService struct {
-	cd          *bedaos.Collateral
+	cd          *daos.CollateralDAO
 	db          *gorm.DB
 	RateFeeding bool
 }
 
-func NewCollateralService(db *gorm.DB, cd *bedaos.Collateral) *CollateralService {
+func NewCollateralService(db *gorm.DB, cd *daos.CollateralDAO) *CollateralService {
 	return &CollateralService{
 		cd:          cd,
 		db:          db,
@@ -27,7 +29,6 @@ func NewCollateralService(db *gorm.DB, cd *bedaos.Collateral) *CollateralService
 
 func (cs *CollateralService) RateFeed() {
 	collaterals, err := cs.cd.FindAll()
-
 	if err != nil {
 		fmt.Println(err.Error())
 		return
@@ -45,6 +46,7 @@ func (cs *CollateralService) RateFeed() {
 
 		client := &http.Client{}
 		res, err := client.Do(req)
+
 		if err != nil {
 			fmt.Println("Call external service failed", c.Symbol, err.Error())
 			continue
@@ -73,18 +75,28 @@ func (cs *CollateralService) RateFeed() {
 			continue
 		}
 
-		_, exist := data[c.Symbol]
+		_, exist := data["USD"]
 		if exist {
-			val := data[c.Symbol].(float64)
+			val := data["USD"].(float64)
 			intVal := uint64(val * 100)
 			// todo call update symbol
 			if intVal != c.Value {
-				c.Value = intVal
-				err := cs.cd.Update(cs.db, c)
-				fmt.Printf("Update rate for symbol %s failed %s\n", c.Symbol, err.Error())
-			}
-		}
+				errTx := models.WithTransaction(func(tx *gorm.DB) error {
+					c.Value = intVal
+					if err := cs.cd.Update(tx, c); err != nil {
+						log.Printf("Update rate for symbol %s failed %s\n", c.Symbol, err.Error())
+						return err
+					}
+					return nil
+				})
 
+				if errTx != nil {
+					log.Printf("Update Tnx rate for symbol %s failed %s\n", c.Symbol, errTx.Error())
+				}
+			}
+		} else {
+			log.Printf("Not found symbol %s \n", c.Symbol)
+		}
 		time.Sleep(1 * time.Second)
 	}
 }

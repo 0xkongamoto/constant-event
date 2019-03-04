@@ -14,7 +14,6 @@ import (
 	"github.com/constant-money/constant-event/services"
 	"github.com/robfig/cron"
 
-	bedaos "github.com/constant-money/constant-web-api/daos"
 	"github.com/constant-money/constant-web-api/services/3rd/primetrust"
 )
 
@@ -175,11 +174,11 @@ func main() {
 	taskCron.Start()
 
 	// collaterals loan group
-	collateralDAO := bedaos.NewCollateral()
+	collateralDAO := daos.InitCollateralDAO(models.Database())
 	collateralSrv := services.NewCollateralService(models.Database(), collateralDAO)
 	collateralCron := cron.New()
-	collateralCron.AddFunc("@every 30m", func() {
-		fmt.Println("scan collateral rate every 30m")
+	collateralCron.AddFunc("@every 5m", func() {
+		fmt.Println("scan collateral rate every 5m")
 		if !collateralSrv.RateFeeding {
 			collateralSrv.RateFeeding = true
 			collateralSrv.RateFeed()
@@ -193,6 +192,7 @@ func main() {
 	collateralLoanDAO := daos.InitCollateralLoanDAO(models.Database())
 	collateralLoanCron := cron.New()
 	collateralLoan := crons.NewCollateralLoan(collateralLoanDAO, conf)
+	// Scan ETH wallet
 	collateralLoanCron.AddFunc("@every 10s", func() {
 		fmt.Println("collateral loan run every 10s")
 		if !collateralLoan.IsRunningAmount {
@@ -203,6 +203,7 @@ func main() {
 			fmt.Println("collateral loan amount is running")
 		}
 	})
+	// Scan remind
 	collateralLoanCron.AddFunc("@every 1h", func() {
 		fmt.Println("collateral loan remind run every 1h")
 		if !collateralLoan.IsRunningRemind {
