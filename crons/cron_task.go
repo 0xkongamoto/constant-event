@@ -83,7 +83,7 @@ func (cr *CronTask) ScanTask() {
 		var errOnchain error
 		var tnxHash string
 
-		tnxHash, errOnchain = cr.handleSmartContractMethod(dataJSON, &task, masterAddrReady, masterAddrReady.PriKey, etherService, task.Method)
+		tnxHash, errOnchain = cr.handleSmartContractMethod(dataJSON, &task, masterAddrReady, etherService, task.Method)
 
 		if errOnchain == nil {
 			cr.updateMasterAddrStatus(masterAddrReady, wm.MasterAddressStatusProgressing, tnxHash)
@@ -91,13 +91,13 @@ func (cr *CronTask) ScanTask() {
 	}
 }
 
-func (cr *CronTask) handleSmartContractMethod(dataJSON map[string]interface{}, task *wm.Task, masterAddrReady *wm.MasterAddress, priKey string, etherService *ethereum.Ethereum, method wm.TaskMethod) (string, error) {
+func (cr *CronTask) handleSmartContractMethod(dataJSON map[string]interface{}, task *wm.Task, masterAddrReady *wm.MasterAddress, etherService *ethereum.Ethereum, method wm.TaskMethod) (string, error) {
 	dataJSON["ContractAddress"] = task.ContractAddress
 	dataJSON["ContractName"] = task.ContractName
 	dataJSON["MasterAddr"] = masterAddrReady.Address
 
 	// TODO: select InitContract's version by name
-	constantService := ethereum.InitConstant(task.ContractAddress, priKey, cr.conf.CipherKey, etherService)
+	constantService := ethereum.InitConstant(task.ContractAddress, masterAddrReady.PriKey, cr.conf.CipherKey, etherService)
 
 	var tnxHash string
 	var errOnchain error
