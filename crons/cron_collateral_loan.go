@@ -143,20 +143,21 @@ func (cl *CollateralLoan) ScanCollateralPayingInterest() {
 			return
 		}
 
+		var ids []uint
 		for _, collateralLoan := range collateralLoans {
-			collateralLoan.Status = wm.CollateralLoanStatusPayingInterest
-			errTx := models.WithTransaction(func(tx *gorm.DB) error {
-				// TODO send to hook
-				if err := cl.collateralLoanDAO.Update(tx, collateralLoan); err != nil {
-					log.Println("Update Collateral Loan status error", err.Error())
-					return err
-				}
-				return nil
-			})
+			ids = append(ids, collateralLoan.ID)
+		}
 
-			if errTx != nil {
-				log.Println("DB Tnx Update Collateral Loan status error", errTx.Error())
-			}
+		jsonWebhook := make(map[string]interface{})
+		jsonWebhook["type"] = ws.WebhookTypeCollateralLoan
+		jsonWebhook["data"] = map[string]interface{}{
+			"Action": ws.CollateralLoanActionExpired,
+			"IDs":    ids,
+		}
+
+		err = hookService.Event(jsonWebhook)
+		if err != nil {
+			log.Println("Hook remind success error: ", err.Error())
 		}
 	}
 }
