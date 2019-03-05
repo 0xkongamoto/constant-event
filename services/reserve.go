@@ -11,6 +11,7 @@ import (
 
 	"github.com/constant-money/constant-event/daos"
 	"github.com/constant-money/constant-event/models"
+	"github.com/constant-money/constant-web-api/serializers"
 	"github.com/constant-money/constant-web-api/services/3rd/primetrust"
 	"github.com/pkg/errors"
 )
@@ -70,7 +71,7 @@ func (r *ReserveService) execLogic(reserve *models.Reserve) {
 		jsonData["ID"] = reserve.ID
 
 		jsonWebhook := make(map[string]interface{})
-		jsonWebhook["type"] = 1 /* WebhookTypeReserve */
+		jsonWebhook["type"] = serializers.WebhookTypeReserve
 		jsonWebhook["data"] = jsonData
 
 		_, err := r.hook(jsonWebhook)

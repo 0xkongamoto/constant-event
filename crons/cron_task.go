@@ -12,12 +12,12 @@ import (
 	"github.com/constant-money/constant-event/daos"
 	"github.com/constant-money/constant-event/ethereum"
 	"github.com/constant-money/constant-event/models"
-	helpers "github.com/constant-money/constant-web-api/helpers"
 	wm "github.com/constant-money/constant-web-api/models"
 	"github.com/jinzhu/gorm"
 	"github.com/mitchellh/mapstructure"
 )
 
+// CronTask : struct
 type CronTask struct {
 	ScanRunning      bool
 	QueueRange       int
@@ -28,21 +28,21 @@ type CronTask struct {
 }
 
 func NewCronTask(QueueRange int, masterAddressDAO *daos.MasterAddressDAO, taskDao *daos.TaskDAO, txDAO *daos.TxDAO, conf *config.Config) (crt CronTask) {
-	crt = CronTask{false, QueueRange, masterAddressDAO, taskDao, txDAO, config.GetConfig()}
+	crt = CronTask{
+		QueueRange:       QueueRange,
+		masterAddressDAO: masterAddressDAO,
+		taskDAO:          taskDao,
+		txDAO:            txDAO,
+		conf:             conf,
+	}
 	return crt
 }
 
+// ScanTask : ...
 func (cr *CronTask) ScanTask() {
 	masterAddrReady, errMasterAddr := cr.masterAddressDAO.GetAdddressReady()
 	if errMasterAddr != nil {
 		log.Println("Get master address ready error", errMasterAddr.Error())
-		return
-	}
-
-	priKey, err := helpers.DecryptToString(masterAddrReady.PriKey, cr.conf.CipherKey)
-
-	if err != nil {
-		log.Println("Master address not found prikey")
 		return
 	}
 
@@ -83,7 +83,7 @@ func (cr *CronTask) ScanTask() {
 		var errOnchain error
 		var tnxHash string
 
-		tnxHash, errOnchain = cr.handleSmartContractMethod(dataJSON, &task, masterAddrReady, priKey, etherService, task.Method)
+		tnxHash, errOnchain = cr.handleSmartContractMethod(dataJSON, &task, masterAddrReady, masterAddrReady.PriKey, etherService, task.Method)
 
 		if errOnchain == nil {
 			cr.updateMasterAddrStatus(masterAddrReady, wm.MasterAddressStatusProgressing, tnxHash)

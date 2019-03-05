@@ -28,7 +28,10 @@ type CollateralLoan struct {
 
 // NewCollateralLoan :
 func NewCollateralLoan(collateralLoanDAO *daos.CollateralLoanDAO, conf *config.Config) (cl CollateralLoan) {
-	cl = CollateralLoan{false, false, false, 0, collateralLoanDAO, config.GetConfig()}
+	cl = CollateralLoan{
+		collateralLoanDAO: collateralLoanDAO,
+		conf:              conf,
+	}
 	return cl
 }
 

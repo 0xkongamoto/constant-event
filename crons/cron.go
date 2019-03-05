@@ -11,6 +11,7 @@ import (
 	"github.com/constant-money/constant-event/services"
 	"github.com/constant-money/constant-event/utils"
 	wm "github.com/constant-money/constant-web-api/models"
+	"github.com/constant-money/constant-web-api/serializers"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/jinzhu/gorm"
@@ -173,7 +174,7 @@ func (cr *Cron) scanWorker(id int, etherClient *ethclient.Client, jobs <-chan mo
 					jsonData["Hash"] = transaction.Hash
 
 					jsonWebhook := make(map[string]interface{})
-					jsonWebhook["type"] = 0 /* WebhookTypeTxHash */
+					jsonWebhook["type"] = serializers.WebhookTypeTxHash
 					jsonWebhook["data"] = jsonData
 
 					err := hookService.Event(jsonWebhook)
