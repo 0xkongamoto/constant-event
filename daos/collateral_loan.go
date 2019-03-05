@@ -62,7 +62,7 @@ func (cl *CollateralLoanDAO) FindAllPayingByDate(dayNumber uint, page int, limit
 	return collateralLoans, nil
 }
 
-func (cl *CollateralLoanDAO) FindAllPayingOnDay(page int, limit int) ([]*wm.CollateralLoan, error) {
+func (cl *CollateralLoanDAO) FindAllPayingLastDay(page int, limit int) ([]*wm.CollateralLoan, error) {
 	var (
 		collateralLoans []*wm.CollateralLoan
 		offset          = page*limit - limit
@@ -72,14 +72,15 @@ func (cl *CollateralLoanDAO) FindAllPayingOnDay(page int, limit int) ([]*wm.Coll
 						FROM collateral_loans 
 						WHERE 
 							status = ? AND 
-							YEAR(next_pay_at) = YEAR(now()) AND 
-							MONTH(next_pay_at) = MONTH(now()) AND 
-							DAY(next_pay_at) = DAY(now())
+							YEAR(next_pay_at) <= YEAR(now() - interval 1 day) AND 
+							MONTH(next_pay_at) <= MONTH(now() - interval 1 day) AND 
+							DAY(next_pay_at) <= DAY(now() - interval 1 day)
 						LIMIT ? 
 						OFFSET ?`, wm.CollateralLoanStatusAccepted, limit, offset)
 
 	if err := query.Scan(&collateralLoans).Error; err != nil {
 		return nil, errors.Wrap(err, "db.Find")
 	}
+
 	return collateralLoans, nil
 }

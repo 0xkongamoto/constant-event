@@ -130,7 +130,7 @@ func (cl *CollateralLoan) ScanCollateralPayingInterest() {
 	)
 	for {
 		page++
-		collateralLoans, err := cl.collateralLoanDAO.FindAllPayingOnDay(page, limit)
+		collateralLoans, err := cl.collateralLoanDAO.FindAllPayingLastDay(page, limit)
 		if err != nil {
 			log.Println("FindAllPayingOnDate error", err.Error())
 			return
@@ -143,6 +143,7 @@ func (cl *CollateralLoan) ScanCollateralPayingInterest() {
 		for _, collateralLoan := range collateralLoans {
 			collateralLoan.Status = wm.CollateralLoanStatusPayingInterest
 			errTx := models.WithTransaction(func(tx *gorm.DB) error {
+				// TODO send to hook
 				if err := cl.collateralLoanDAO.Update(tx, collateralLoan); err != nil {
 					log.Println("Update Collateral Loan status error", err.Error())
 					return err
