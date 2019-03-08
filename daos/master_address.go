@@ -16,16 +16,16 @@ func (ma *MasterAddressDAO) Update(masterAddress *wm.MasterAddress, tx *gorm.DB)
 }
 
 // GetAdddressReady : ...
-func (ma *MasterAddressDAO) GetAdddressReady() (*wm.MasterAddress, error) {
-	masterAddress := wm.MasterAddress{}
+func (ma *MasterAddressDAO) GetAdddressReady() ([]*wm.MasterAddress, error) {
+	masterAddress := []*wm.MasterAddress{}
 	err := models.Database().
 		Where(`status = ?`, wm.MasterAddressStatusReady).
-		First(&masterAddress).Error
+		Find(&masterAddress).Error
 
 	if err != nil {
 		return nil, err
 	}
-	return &masterAddress, nil
+	return masterAddress, nil
 }
 
 // GetMasterAddress : ...

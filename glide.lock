@@ -1,5 +1,5 @@
-hash: cfc8b902c24f705f982b0a67fa6fdc7dfb2ffde56569e5f5654eeea028443368
-updated: 2019-03-01T16:55:49.794456+07:00
+hash: a437381f4b70f3e5d99c7d33c28618ab840fc28b75a8540c6f86e287b401fd23
+updated: 2019-03-08T14:44:12.607086+07:00
 imports:
 - name: github.com/allegro/bigcache
   version: 84a0ff3f153cbd7e280a19029a864bb04b504e62
@@ -22,11 +22,9 @@ imports:
   - base58
   - bech32
 - name: github.com/constant-money/constant-web-api
-  version: f5f0bf106997d9529ee9a2b123baca7b078bd969
+  version: a912904ebcf1abe061c1ba5cbdab893a9a028c96
+  vcs: git
   subpackages:
-  - config
-  - daos
-  - database
   - helpers
   - models
   - serializers

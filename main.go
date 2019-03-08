@@ -115,9 +115,9 @@ func main() {
 	masterAddressDAO := &daos.MasterAddressDAO{}
 	userDAO := daos.InitUserDAO(models.Database())
 	masterAddr, err := masterAddressDAO.GetMasterAddress()
+	etherService := ethereum.Init(conf)
 
 	if err == nil {
-		etherService := ethereum.Init(conf)
 		for _, value := range mapContracts {
 			constant := ethereum.InitConstant(value.Address, masterAddr.PriKey, conf.CipherKey, etherService)
 			walletSrv := services.InitWalletService(constant, conf.HookEndpoint)
@@ -159,7 +159,7 @@ func main() {
 	userKYCCron.Start()
 
 	// add task cron
-	crTask := crons.NewCronTask(1, masterAddressDAO, &daos.TaskDAO{}, &daos.TxDAO{}, config.GetConfig())
+	crTask := crons.NewCronTask(masterAddressDAO, &daos.TaskDAO{}, &daos.TxDAO{}, etherService, config.GetConfig())
 	taskCron := cron.New()
 	taskCron.AddFunc("@every 5s", func() {
 		fmt.Println("scan task every 5s")

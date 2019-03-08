@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log"
 	"math/big"
-	"strings"
 
 	"github.com/constant-money/constant-event/config"
 	"github.com/constant-money/constant-event/daos"
@@ -20,19 +19,21 @@ import (
 // CronTask : struct
 type CronTask struct {
 	ScanRunning      bool
-	QueueRange       int
 	masterAddressDAO *daos.MasterAddressDAO
 	taskDAO          *daos.TaskDAO
 	txDAO            *daos.TxDAO
 	conf             *config.Config
+	etherSrv         *ethereum.Ethereum
+	lastIdx          uint
 }
 
-func NewCronTask(QueueRange int, masterAddressDAO *daos.MasterAddressDAO, taskDao *daos.TaskDAO, txDAO *daos.TxDAO, conf *config.Config) (crt CronTask) {
-	crt = CronTask{
-		QueueRange:       QueueRange,
+// NewCronTask : addressDAO, taskDAO, txDAO, etherSrv, config
+func NewCronTask(masterAddressDAO *daos.MasterAddressDAO, taskDao *daos.TaskDAO, txDAO *daos.TxDAO, etherSrv *ethereum.Ethereum, conf *config.Config) (crt *CronTask) {
+	crt = &CronTask{
 		masterAddressDAO: masterAddressDAO,
 		taskDAO:          taskDao,
 		txDAO:            txDAO,
+		etherSrv:         etherSrv,
 		conf:             conf,
 	}
 	return crt
@@ -40,20 +41,13 @@ func NewCronTask(QueueRange int, masterAddressDAO *daos.MasterAddressDAO, taskDa
 
 // ScanTask : ...
 func (cr *CronTask) ScanTask() {
-	masterAddrReady, errMasterAddr := cr.masterAddressDAO.GetAdddressReady()
+	arrAddr, errMasterAddr := cr.masterAddressDAO.GetAdddressReady()
 	if errMasterAddr != nil {
-		log.Println("Get master address ready error", errMasterAddr.Error())
+		log.Println("Get master address ready error: ", errMasterAddr.Error())
 		return
 	}
 
-	tasksBegin, errBegin := cr.taskDAO.GetLastIdScanning()
-	var idBegin = tasksBegin.ID
-
-	if errBegin != nil {
-		log.Println("Get last Task error", errBegin.Error())
-	}
-
-	tasks, errTasks := cr.taskDAO.GetTasksScanning(idBegin, cr.QueueRange)
+	tasks, errTasks := cr.taskDAO.GetTasksScanning(cr.lastIdx, len(arrAddr))
 	if errTasks != nil {
 		log.Println("Get Tasks error", errTasks.Error())
 		return
@@ -64,11 +58,16 @@ func (cr *CronTask) ScanTask() {
 		return
 	}
 
-	etherService := ethereum.Init(cr.conf)
+	if len(tasks) > len(arrAddr) {
+		log.Println("len(tasks) > len(arrAddr)")
+		return
+	}
 
-	for _, task := range tasks {
-		// TODO: check task's MasterAddr is ready
-		errUpdate := cr.updateTask(&task, masterAddrReady.Address, wm.TaskStatusProgressing)
+	for i := 0; i < len(tasks); i++ {
+		address := arrAddr[i]
+		task := tasks[i]
+
+		errUpdate := cr.updateTask(&task, address.Address, wm.TaskStatusProgressing)
 		if errUpdate != nil {
 			continue
 		}
@@ -80,18 +79,19 @@ func (cr *CronTask) ScanTask() {
 			return
 		}
 
-		var errOnchain error
-		var tnxHash string
-
-		tnxHash, errOnchain = cr.handleSmartContractMethod(dataJSON, &task, masterAddrReady, etherService, task.Method)
+		errOnchain := cr.handleSmartContractMethod(dataJSON, &task, address, cr.etherSrv, task.Method)
 
 		if errOnchain == nil {
-			cr.updateMasterAddrStatus(masterAddrReady, wm.MasterAddressStatusProgressing, tnxHash)
+			cr.updateMasterAddrStatus(address, wm.MasterAddressStatusProgressing)
 		}
+
+		cr.lastIdx = task.ID
+
 	}
+
 }
 
-func (cr *CronTask) handleSmartContractMethod(dataJSON map[string]interface{}, task *wm.Task, masterAddrReady *wm.MasterAddress, etherService *ethereum.Ethereum, method wm.TaskMethod) (string, error) {
+func (cr *CronTask) handleSmartContractMethod(dataJSON map[string]interface{}, task *wm.Task, masterAddrReady *wm.MasterAddress, etherService *ethereum.Ethereum, method wm.TaskMethod) error {
 	dataJSON["ContractAddress"] = task.ContractAddress
 	dataJSON["ContractName"] = task.ContractName
 	dataJSON["MasterAddr"] = masterAddrReady.Address
@@ -131,7 +131,7 @@ func (cr *CronTask) handleSmartContractMethod(dataJSON map[string]interface{}, t
 
 	cr.updateTask(task, masterAddrReady.Address, taskStatus)
 	cr.saveTnx(tnxHash, string(dataStr), -1, dataJSON["Offchain"].(string), dataJSON["ContractAddress"].(string), string(task.Method), masterAddrReady.Address, task.ID)
-	return tnxHash, errOnchain
+	return errOnchain
 }
 
 func (cr *CronTask) handlePurchase(params *models.PurchaseParams, taskID uint, constantService *ethereum.Constant) (string, error) {
@@ -185,13 +185,9 @@ func (cr *CronTask) updateTask(task *wm.Task, masterAddr string, status wm.TaskS
 	return errTx
 }
 
-func (cr *CronTask) updateMasterAddrStatus(masterAddr *wm.MasterAddress, status wm.MasterAddressStatus, tnxHash string) error {
+func (cr *CronTask) updateMasterAddrStatus(masterAddr *wm.MasterAddress, status wm.MasterAddressStatus) error {
 	errTx := models.WithTransaction(func(tx *gorm.DB) error {
 		masterAddr.Status = status
-
-		if tnxHash != "" {
-			masterAddr.LastTnxHash = strings.ToLower(tnxHash)
-		}
 
 		if err := cr.masterAddressDAO.Update(masterAddr, tx); err != nil {
 			log.Println("Update Master Address Status error", err.Error())
@@ -207,7 +203,7 @@ func (cr *CronTask) updateMasterAddrStatus(masterAddr *wm.MasterAddress, status 
 }
 
 func (cr *CronTask) saveTnx(hash string, payload string, status int, offchain string, constractAddr string, contractMethod string, masterAddress string, taskID uint) error {
-	newTx := &models.Tx{
+	newTx := &wm.Tx{
 		Hash:            hash,
 		Payload:         payload,
 		Status:          status,

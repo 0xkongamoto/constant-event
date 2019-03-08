@@ -62,7 +62,7 @@ func (cr *Cron) ScanTx() {
 	}
 
 	totalJobs := len(transactions)
-	jobs := make(chan models.Tx, 100)
+	jobs := make(chan wm.Tx, 100)
 	results := make(chan bool, totalJobs)
 
 	workers := totalJobs / 10
@@ -122,7 +122,7 @@ func (cr *Cron) SyncTx() {
 
 					offchain, hasOffchain := jsonData["offchain"]
 
-					tx := &models.Tx{
+					tx := &wm.Tx{
 						Hash:            hash,
 						ContractAddress: cr.ContractAddress,
 						ContractMethod:  jsonData["methodName"].(string),
@@ -143,7 +143,7 @@ func (cr *Cron) SyncTx() {
 	}
 }
 
-func (cr *Cron) scanWorker(id int, etherClient *ethclient.Client, jobs <-chan models.Tx, results chan<- bool) {
+func (cr *Cron) scanWorker(id int, etherClient *ethclient.Client, jobs <-chan wm.Tx, results chan<- bool) {
 	for transaction := range jobs {
 		log.Printf("start scan %s\n", transaction.Hash)
 		txHash := common.HexToHash(transaction.Hash)
