@@ -189,9 +189,10 @@ func main() {
 	})
 	collateralCron.Start()
 
+	btcClientService := services.NewBitcoinService(conf)
 	collateralLoanDAO := daos.InitCollateralLoanDAO(models.Database())
 	collateralLoanCron := cron.New()
-	collateralLoan := crons.NewCollateralLoan(collateralLoanDAO, conf)
+	collateralLoan := crons.NewCollateralLoan(collateralLoanDAO, btcClientService, conf)
 	// Scan ETH wallet
 	collateralLoanCron.AddFunc("@every 10s", func() {
 		fmt.Println("collateral loan run every 10s")

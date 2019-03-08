@@ -23,5 +23,9 @@
       "address": "0x123"
     }
   ],
-  "wallet_cipher_key": ""
+  "wallet_cipher_key": "",
+  "blockcyp_api_url": "https://api.blockcypher.com/v1/btc/test3/addrs",
+  "blockexp_api_url": "https://testnet.blockexplorer.com/api",
+  "btc_is_testnet": true,
+  "bcy_token": "",
 }

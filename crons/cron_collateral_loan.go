@@ -9,6 +9,7 @@ import (
 	"github.com/constant-money/constant-event/config"
 	"github.com/constant-money/constant-event/daos"
 	"github.com/constant-money/constant-event/models"
+	"github.com/constant-money/constant-event/services"
 	wm "github.com/constant-money/constant-web-api/models"
 	ws "github.com/constant-money/constant-web-api/serializers"
 	"github.com/ethereum/go-ethereum/common"
@@ -23,13 +24,15 @@ type CollateralLoan struct {
 	IsRunningPayingInterest bool
 	LastIndex               uint
 	collateralLoanDAO       *daos.CollateralLoanDAO
+	btcClient               *services.BitcoinService
 	conf                    *config.Config
 }
 
 // NewCollateralLoan :
-func NewCollateralLoan(collateralLoanDAO *daos.CollateralLoanDAO, conf *config.Config) (cl CollateralLoan) {
+func NewCollateralLoan(collateralLoanDAO *daos.CollateralLoanDAO, btcClient *services.BitcoinService, conf *config.Config) (cl CollateralLoan) {
 	cl = CollateralLoan{
 		collateralLoanDAO: collateralLoanDAO,
+		btcClient:         btcClient,
 		conf:              conf,
 	}
 	return cl
@@ -40,9 +43,8 @@ func (cl *CollateralLoan) ScanCollateralAmount() {
 	conf := config.GetConfig()
 	networkURL := conf.ChainURL
 
-	etherClient, err := ethclient.Dial(networkURL)
-
 	collateralLoans, err := cl.collateralLoanDAO.FindAllPending(cl.LastIndex, 10)
+
 	if err != nil {
 		log.Println("Find Collateral Loans peding error", err.Error())
 		return
@@ -52,19 +54,41 @@ func (cl *CollateralLoan) ScanCollateralAmount() {
 	} else {
 		cl.LastIndex = collateralLoans[0].ID
 		for index := 0; index < len(collateralLoans); index++ {
-			account := common.HexToAddress(collateralLoans[index].CollateralAddress)
-			balance, err := etherClient.BalanceAt(context.Background(), account, nil)
-			if err != nil {
-				log.Fatal(err)
-				return
+
+			var (
+				balanceStr = ""
+				decimal    = 0
+			)
+
+			if collateralLoans[index].Collateral.WalletType == wm.CollateralWalletTypeEthereum {
+				account := common.HexToAddress(collateralLoans[index].CollateralAddress)
+				etherClient, err := ethclient.Dial(networkURL)
+				balance, err := etherClient.BalanceAt(context.Background(), account, nil)
+				if err != nil {
+					log.Println(err)
+					continue
+				}
+				balanceStr = balance.String()
+				decimal = 18
+			} else if collateralLoans[index].Collateral.WalletType == wm.CollateralWalletTypeBitcoin {
+				balance, err := cl.btcClient.BTCBalanceOf(collateralLoans[index].CollateralAddress)
+				if err != nil {
+					log.Println(err)
+					continue
+				}
+				balanceStr = balance
+				decimal = 10
+			} else {
+				log.Println("Not found wallet type: ", collateralLoans[index])
+				continue
 			}
 
 			fbalance := new(big.Float)
-			fbalance.SetString(balance.String())
-			ethValue := new(big.Float).Quo(fbalance, big.NewFloat(math.Pow10(18)))
-			ethValue = new(big.Float).Mul(big.NewFloat(100), ethValue)
+			fbalance.SetString(balanceStr)
+			addrValue := new(big.Float).Quo(fbalance, big.NewFloat(math.Pow10(decimal)))
+			addrValue = new(big.Float).Mul(big.NewFloat(100), addrValue)
 
-			if ethValue.Cmp(new(big.Float).SetUint64(collateralLoans[index].CollateralAmount)) >= 0 {
+			if addrValue.Cmp(new(big.Float).SetUint64(collateralLoans[index].CollateralAmount)) >= 0 {
 				collateralLoans[index].Status = wm.CollateralLoanStatusAccepted
 				errTx := models.WithTransaction(func(tx *gorm.DB) error {
 					if err := cl.collateralLoanDAO.Update(tx, collateralLoans[index]); err != nil {

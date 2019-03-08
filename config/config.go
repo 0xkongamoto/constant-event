@@ -44,6 +44,10 @@ type Config struct {
 	Contracts           []Contract            `json:"contracts"`
 	MasterAddresses     []MasterAddressConfig `json:"master_addresses"`
 	CipherKey           string                `json:"wallet_cipher_key"`
+	BlockexplorerAPI    string                `json:"blockexp_api_url"`
+	BlockCypherAPI      string                `json:"blockcyp_api_url"`
+	BtcIsTestnet        bool                  `json:"btc_is_testnet"`
+	BcyToken            string                `json:"bcy_token"`
 }
 
 type Contract struct {
