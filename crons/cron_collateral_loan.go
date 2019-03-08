@@ -8,13 +8,11 @@ import (
 
 	"github.com/constant-money/constant-event/config"
 	"github.com/constant-money/constant-event/daos"
-	"github.com/constant-money/constant-event/models"
 	"github.com/constant-money/constant-event/services"
 	wm "github.com/constant-money/constant-web-api/models"
 	ws "github.com/constant-money/constant-web-api/serializers"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
-	"github.com/jinzhu/gorm"
 )
 
 // CollateralLoan :
@@ -53,15 +51,16 @@ func (cl *CollateralLoan) ScanCollateralAmount() {
 		cl.LastIndex = 0
 	} else {
 		cl.LastIndex = collateralLoans[0].ID
-		for index := 0; index < len(collateralLoans); index++ {
+		var ids []uint
 
+		for _, collateralLoan := range collateralLoans {
 			var (
 				balanceStr = ""
 				decimal    = 0
 			)
 
-			if collateralLoans[index].Collateral.WalletType == wm.CollateralWalletTypeEthereum {
-				account := common.HexToAddress(collateralLoans[index].CollateralAddress)
+			if collateralLoan.Collateral.WalletType == wm.CollateralWalletTypeEthereum {
+				account := common.HexToAddress(collateralLoan.CollateralAddress)
 				etherClient, err := ethclient.Dial(networkURL)
 				balance, err := etherClient.BalanceAt(context.Background(), account, nil)
 				if err != nil {
@@ -70,8 +69,8 @@ func (cl *CollateralLoan) ScanCollateralAmount() {
 				}
 				balanceStr = balance.String()
 				decimal = 18
-			} else if collateralLoans[index].Collateral.WalletType == wm.CollateralWalletTypeBitcoin {
-				balance, err := cl.btcClient.BTCBalanceOf(collateralLoans[index].CollateralAddress)
+			} else if collateralLoan.Collateral.WalletType == wm.CollateralWalletTypeBitcoin {
+				balance, err := cl.btcClient.BTCBalanceOf(collateralLoan.CollateralAddress)
 				if err != nil {
 					log.Println(err)
 					continue
@@ -79,7 +78,7 @@ func (cl *CollateralLoan) ScanCollateralAmount() {
 				balanceStr = balance
 				decimal = 10
 			} else {
-				log.Println("Not found wallet type: ", collateralLoans[index])
+				log.Println("Not found wallet type: ", collateralLoan)
 				continue
 			}
 
@@ -88,19 +87,20 @@ func (cl *CollateralLoan) ScanCollateralAmount() {
 			addrValue := new(big.Float).Quo(fbalance, big.NewFloat(math.Pow10(decimal)))
 			addrValue = new(big.Float).Mul(big.NewFloat(100), addrValue)
 
-			if addrValue.Cmp(new(big.Float).SetUint64(collateralLoans[index].CollateralAmount)) >= 0 {
-				collateralLoans[index].Status = wm.CollateralLoanStatusAccepted
-				errTx := models.WithTransaction(func(tx *gorm.DB) error {
-					if err := cl.collateralLoanDAO.Update(tx, collateralLoans[index]); err != nil {
-						log.Println("Update Collateral Loan error", err.Error())
-						return err
-					}
-					return nil
-				})
+			if addrValue.Cmp(new(big.Float).SetUint64(collateralLoan.CollateralAmount)) >= 0 {
+				ids = append(ids, collateralLoan.ID)
+			}
 
-				if errTx != nil {
-					log.Println("DB Tnx Update Collateral Loan error", errTx.Error())
-				}
+			jsonWebhook := make(map[string]interface{})
+			jsonWebhook["type"] = ws.WebhookTypeCollateralLoan
+			jsonWebhook["data"] = map[string]interface{}{
+				"Action": ws.CollateralLoanActionWallet,
+				"IDs":    ids,
+			}
+
+			err = hookService.Event(jsonWebhook)
+			if err != nil {
+				log.Println("Hook loan wallet success error: ", err.Error())
 			}
 		}
 	}
