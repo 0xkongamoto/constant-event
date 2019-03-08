@@ -206,7 +206,7 @@ func main() {
 	})
 
 	// Scan collateral loan remind
-	collateralLoanCron.AddFunc("@every 24h", func() {
+	collateralLoanCron.AddFunc("@every 1m", func() {
 		fmt.Println("collateral loan run every 24h")
 		if !collateralLoan.IsRunningRemind {
 			collateralLoan.IsRunningRemind = true
@@ -218,7 +218,7 @@ func main() {
 	})
 
 	// Scan collateral loan paying interest status
-	collateralLoanCron.AddFunc("@every 12h", func() {
+	collateralLoanCron.AddFunc("@every 1m", func() {
 		fmt.Println("collateral loan run every 12h")
 		if !collateralLoan.IsRunningPayingInterest {
 			collateralLoan.IsRunningPayingInterest = true
