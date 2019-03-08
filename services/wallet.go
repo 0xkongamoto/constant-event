@@ -81,8 +81,6 @@ func (ws *WalletService) ScanBalanceOf(userWallet *wm.UserWallet) (*big.Int, err
 			if err != nil {
 				return nil, err
 			}
-
-			fmt.Println("DEBUG balance : ", bal.Int64())
 			return bal, nil
 		}
 	}

@@ -2,15 +2,22 @@ package crons
 
 import (
 	"log"
+	"time"
 
 	"github.com/constant-money/constant-event/daos"
 	"github.com/constant-money/constant-event/services"
+	"github.com/constant-money/constant-web-api/models"
+)
+
+const (
+	DeltaTimeInSeconds = 60
 )
 
 // WalletCron : struct
 type WalletCron struct {
 	ud        *daos.UserDAO
 	walletSrv *services.WalletService
+	wallets   map[string]int64
 	Running   bool
 }
 
@@ -19,6 +26,7 @@ func InitWalletCron(ud *daos.UserDAO, walletSrv *services.WalletService) *Wallet
 	return &WalletCron{
 		ud:        ud,
 		walletSrv: walletSrv,
+		wallets:   make(map[string]int64),
 	}
 }
 
@@ -31,9 +39,19 @@ func (wc *WalletCron) ScanWallets() {
 		if err != nil {
 			log.Println(err.Error())
 		} else {
-			if balance.Int64() >= 0 {
+			if balance.Int64() > 0 && wc.isAbleToFireHook(uw) {
 				wc.walletSrv.SendUserWalletHook(uw, balance.Int64())
 			}
 		}
 	}
+}
+
+func (wc *WalletCron) isAbleToFireHook(uw *models.UserWallet) (result bool) {
+	start := wc.wallets[uw.WalletAddress]
+	now := time.Now().UTC().UnixNano() / 1000000000
+	if now-start >= DeltaTimeInSeconds {
+		wc.wallets[uw.WalletAddress] = now
+		result = true
+	}
+	return
 }
