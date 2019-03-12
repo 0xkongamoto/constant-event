@@ -1,8 +1,6 @@
 package daos
 
 import (
-	"strings"
-
 	"github.com/constant-money/constant-event/models"
 	wm "github.com/constant-money/constant-web-api/models"
 	"github.com/jinzhu/gorm"
@@ -36,15 +34,4 @@ func (ma *MasterAddressDAO) GetMasterAddress() (*wm.MasterAddress, error) {
 		return nil, err
 	}
 	return &masterAddress, nil
-}
-
-func (ma *MasterAddressDAO) UpdateStatusByTnxHash(tnxHash string, status wm.MasterAddressStatus, tx *gorm.DB) (err error) {
-	var address wm.MasterAddress
-	err = tx.Model(&address).Where("last_tnx_hash = ?", strings.ToLower(tnxHash)).Update("status", status).Error
-	return
-}
-
-func (t *MasterAddressDAO) DeleteAll(query string, tx *gorm.DB) error {
-	err := tx.Unscoped().Where(query).Delete(wm.MasterAddress{}).Error
-	return err
 }

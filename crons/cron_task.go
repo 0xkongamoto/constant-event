@@ -67,11 +67,6 @@ func (cr *CronTask) ScanTask() {
 		address := arrAddr[i]
 		task := tasks[i]
 
-		errUpdate := cr.updateTask(&task, wm.TaskStatusProgressing)
-		if errUpdate != nil {
-			continue
-		}
-
 		dataBytes := []byte(task.Data)
 		var dataJSON map[string]interface{}
 		if errUnmarshal := json.Unmarshal(dataBytes, &dataJSON); errUnmarshal != nil {

@@ -7,14 +7,12 @@ import (
 
 	"github.com/constant-money/constant-event/config"
 	"github.com/constant-money/constant-event/daos"
-	"github.com/constant-money/constant-event/models"
 	"github.com/constant-money/constant-event/services"
 	"github.com/constant-money/constant-event/utils"
 	wm "github.com/constant-money/constant-web-api/models"
 	"github.com/constant-money/constant-web-api/serializers"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
-	"github.com/jinzhu/gorm"
 )
 
 var txDAO = &daos.TxDAO{}
@@ -154,9 +152,6 @@ func (cr *Cron) scanWorker(id int, etherClient *ethclient.Client, jobs <-chan wm
 				log.Println("Scan Tx: get receipt error", err.Error())
 			} else {
 				log.Printf("Tx %s has receipt, status %d\n", transaction.Hash, receipt.Status)
-
-				cr.updateMasterAddrStatus(transaction.Hash, wm.MasterAddressStatusReady)
-
 				if receipt.Status == 0 {
 					// case fail
 					decodeStatus, methodJSON := utils.DecodeTransactionInput(cr.ContractJSON, common.ToHex(tx.Data()))
@@ -186,9 +181,6 @@ func (cr *Cron) scanWorker(id int, etherClient *ethclient.Client, jobs <-chan wm
 				} else if receipt.Status == 1 {
 					// case success
 					log.Printf("Tx %s has receipt, logs %d\n", transaction.Hash, len(receipt.Logs))
-
-					cr.updateMasterAddrStatus(transaction.Hash, wm.MasterAddressStatusReady)
-
 					if len(receipt.Logs) > 0 {
 						for _, l := range receipt.Logs {
 							decodeStatus, eventJSON := utils.DecodeTransactionLog(cr.ContractJSON, l)
@@ -206,8 +198,6 @@ func (cr *Cron) scanWorker(id int, etherClient *ethclient.Client, jobs <-chan wm
 								jsonWebhook["data"] = jsonData
 
 								if decodeStatus {
-									// call REST API SUCCESS with event
-									//log.Println("hook success", jsonData)
 									err := hookService.Event(jsonWebhook)
 									if err != nil {
 										log.Println("Hook event success error: ", err.Error())
@@ -226,19 +216,4 @@ func (cr *Cron) scanWorker(id int, etherClient *ethclient.Client, jobs <-chan wm
 		}
 		results <- true
 	}
-}
-
-func (cr *Cron) updateMasterAddrStatus(tnxHash string, status wm.MasterAddressStatus) error {
-	errTx := models.WithTransaction(func(tx *gorm.DB) error {
-		if err := cr.masterAddressDAO.UpdateStatusByTnxHash(tnxHash, status, tx); err != nil {
-			log.Println("Update Master Address Ready error", err.Error())
-			return err
-		}
-		return nil
-	})
-
-	if errTx != nil {
-		log.Println("DB Tnx Update Master Address Ready error", errTx.Error())
-	}
-	return errTx
 }
