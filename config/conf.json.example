@@ -9,17 +9,9 @@
   "primetrust_prefix": "",
   "primetrust_email": "",
   "primetrust_password": "",
-  "contract_owner_private_key": "",
-  "contract_owner_wallet_address": "",
   "contracts": [
     {
       "name": "ContractA",
-      "address": "0x123"
-    }
-  ],
-  "master_addresses": [
-    {
-      "key": "0x123",
       "address": "0x123"
     }
   ],
@@ -27,5 +19,5 @@
   "blockcyp_api_url": "https://api.blockcypher.com/v1/btc/test3/addrs",
   "blockexp_api_url": "https://testnet.blockexplorer.com/api",
   "btc_is_testnet": true,
-  "bcy_token": "",
+  "bcy_token": ""
 }
