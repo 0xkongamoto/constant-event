@@ -193,6 +193,7 @@ func (cl *CollateralLoan) ScanCollateralDowntrend() {
 				ids = append(ids, collateralLoan.ID)
 			}
 
+			cl.sendToHook(ids, ws.CollateralLoanActionRemindDownTrend)
 			// TODO sell coin
 		}
 
