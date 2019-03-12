@@ -67,7 +67,7 @@ func (cr *CronTask) ScanTask() {
 		address := arrAddr[i]
 		task := tasks[i]
 
-		errUpdate := cr.updateTask(&task, address.Address, wm.TaskStatusProgressing)
+		errUpdate := cr.updateTask(&task, wm.TaskStatusProgressing)
 		if errUpdate != nil {
 			continue
 		}
@@ -129,7 +129,7 @@ func (cr *CronTask) handleSmartContractMethod(dataJSON map[string]interface{}, t
 	dataStr, _ := json.Marshal(dataJSON)
 	// task.Data = string(dataStr)
 
-	cr.updateTask(task, masterAddrReady.Address, taskStatus)
+	cr.updateTask(task, taskStatus)
 	cr.saveTnx(tnxHash, string(dataStr), -1, dataJSON["Offchain"].(string), dataJSON["ContractAddress"].(string), string(task.Method), masterAddrReady.Address, task.ID)
 	return errOnchain
 }
@@ -167,10 +167,9 @@ func (cr *CronTask) handleTransferByAdmin(params *models.TransferByAdminParams, 
 	return tnxHash, err
 }
 
-func (cr *CronTask) updateTask(task *wm.Task, masterAddr string, status wm.TaskStatus) error {
+func (cr *CronTask) updateTask(task *wm.Task, status wm.TaskStatus) error {
 	errTx := models.WithTransaction(func(tx *gorm.DB) error {
 		task.Status = status
-		task.MasterAddress = masterAddr
 
 		if err := cr.taskDAO.Update(task, tx); err != nil {
 			log.Println("Update Task error", err.Error())
