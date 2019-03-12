@@ -230,7 +230,7 @@ func (cr *Cron) scanWorker(id int, etherClient *ethclient.Client, jobs <-chan wm
 
 func (cr *Cron) updateMasterAddrStatus(tnxHash string, status wm.MasterAddressStatus) error {
 	errTx := models.WithTransaction(func(tx *gorm.DB) error {
-		if err := cr.masterAddressDAO.UpdateStatusByTnxHash(tnxHash, wm.MasterAddressStatusReady, tx); err != nil {
+		if err := cr.masterAddressDAO.UpdateStatusByTnxHash(tnxHash, status, tx); err != nil {
 			log.Println("Update Master Address Ready error", err.Error())
 			return err
 		}
