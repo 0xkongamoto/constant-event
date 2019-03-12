@@ -15,6 +15,10 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 )
 
+const (
+	CollateralLoanDowntrendLimit = 80 * 100 // 80%
+)
+
 // CollateralLoan :
 type CollateralLoan struct {
 	IsRunningAmount                bool
@@ -170,7 +174,7 @@ func (cl *CollateralLoan) ScanCollateralDowntrend() {
 	}
 
 	for _, collateral := range collaterals {
-		currentValue := collateral.Value / 80 * 100 // 80%
+		currentValue := collateral.Value / CollateralLoanDowntrendLimit
 
 		var (
 			limit = 1
@@ -193,7 +197,7 @@ func (cl *CollateralLoan) ScanCollateralDowntrend() {
 				ids = append(ids, collateralLoan.ID)
 			}
 
-			cl.sendToHook(ids, ws.CollateralLoanActionRemindDownTrend)
+			cl.sendToHook(ids, ws.CollateralLoanActionDownTrend)
 			// TODO sell coin
 		}
 
