@@ -124,8 +124,8 @@ func main() {
 			ucWallet := crons.InitWalletCron(userDAO, walletSrv)
 
 			userWalletsCron := cron.New()
-			userWalletsCron.AddFunc("@every 2s", func() {
-				fmt.Println("scan user wallet service every 2s")
+			userWalletsCron.AddFunc("@every 15s", func() {
+				fmt.Println("scan user wallet service every 15s")
 				if !ucWallet.Running {
 					ucWallet.Running = true
 					ucWallet.ScanWallets()
