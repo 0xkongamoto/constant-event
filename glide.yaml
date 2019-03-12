@@ -25,7 +25,7 @@ import:
   version: ^1.1.2
 - package: github.com/constant-money/constant-web-api
   vcs: git
-  version: deploy
+  version: master
 - package: github.com/btcsuite/btclog
 - package: github.com/btcsuite/btcutil
 - package: github.com/blockcypher/gobcy
