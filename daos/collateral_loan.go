@@ -62,7 +62,7 @@ func (cl *CollateralLoanDAO) FindAllPayingByDate(dayNumber uint, page int, limit
 	return collateralLoans, nil
 }
 
-func (cl *CollateralLoanDAO) FindAllPayingLastDay(page int, limit int) ([]*wm.CollateralLoan, error) {
+func (cl *CollateralLoanDAO) FindAllPayingInterestByDay(dayNumber int, page int, limit int) ([]*wm.CollateralLoan, error) {
 	var (
 		collateralLoans []*wm.CollateralLoan
 		offset          = page*limit - limit
@@ -72,15 +72,37 @@ func (cl *CollateralLoanDAO) FindAllPayingLastDay(page int, limit int) ([]*wm.Co
 						FROM collateral_loans 
 						WHERE 
 							status = ? AND 
-							YEAR(next_pay_at) <= YEAR(now() - interval 1 day) AND 
-							MONTH(next_pay_at) <= MONTH(now() - interval 1 day) AND 
-							DAY(next_pay_at) <= DAY(now() - interval 1 day)
+							YEAR(next_pay_at) <= YEAR(now() - interval ? day) AND 
+							MONTH(next_pay_at) <= MONTH(now() - interval ? day) AND 
+							DAY(next_pay_at) <= DAY(now() - interval ? day)
 						LIMIT ? 
-						OFFSET ?`, wm.CollateralLoanStatusAccepted, limit, offset)
+						OFFSET ?`, wm.CollateralLoanStatusAccepted, dayNumber, dayNumber, dayNumber, limit, offset)
 
 	if err := query.Scan(&collateralLoans).Error; err != nil {
 		return nil, errors.Wrap(err, "db.Find")
 	}
 
+	return collateralLoans, nil
+}
+
+func (cl *CollateralLoanDAO) FindAllDowntrend(amount uint64, page int, limit int) ([]*wm.CollateralLoan, error) {
+	var (
+		collateralLoans []*wm.CollateralLoan
+		offset          = page*limit - limit
+	)
+
+	query := cl.db.Table("collateral_loans").Preload("Collateral").Preload("CollateralLoanTransactions").
+		Joins("JOIN collateral_loan_transactions ON collateral_loan_transactions.collateral_loan_id=collateral_loans.id").
+		Where(`	(status = ? OR status = ?) AND 
+				collateral_loan_transactions.collateral_rate >= ? AND
+				collateral_loan_transactions.type = ?
+			`, wm.CollateralLoanStatusPayingInterest, wm.CollateralLoanStatusAccepted, amount, wm.CollateralLoanTransactionTypeReceive).
+		Order("id desc").
+		Limit(limit).
+		Offset(offset)
+
+	if err := query.Find(&collateralLoans).Error; err != nil {
+		return nil, errors.Wrap(err, "db.Find")
+	}
 	return collateralLoans, nil
 }

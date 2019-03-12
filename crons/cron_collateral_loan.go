@@ -17,19 +17,23 @@ import (
 
 // CollateralLoan :
 type CollateralLoan struct {
-	IsRunningAmount         bool
-	IsRunningRemind         bool
-	IsRunningPayingInterest bool
-	LastIndex               uint
-	collateralLoanDAO       *daos.CollateralLoanDAO
-	btcClient               *services.BitcoinService
-	conf                    *config.Config
+	IsRunningAmount                bool
+	IsRunningRemind                bool
+	IsRunningPayingInterest        bool
+	IsRunningPayingInterestOverdue bool
+	IsRunningDowntrend             bool
+	LastIndex                      uint
+	collateralLoanDAO              *daos.CollateralLoanDAO
+	collateralDAO                  *daos.CollateralDAO
+	btcClient                      *services.BitcoinService
+	conf                           *config.Config
 }
 
 // NewCollateralLoan :
-func NewCollateralLoan(collateralLoanDAO *daos.CollateralLoanDAO, btcClient *services.BitcoinService, conf *config.Config) (cl CollateralLoan) {
+func NewCollateralLoan(collateralLoanDAO *daos.CollateralLoanDAO, collateralDAO *daos.CollateralDAO, btcClient *services.BitcoinService, conf *config.Config) (cl CollateralLoan) {
 	cl = CollateralLoan{
 		collateralLoanDAO: collateralLoanDAO,
+		collateralDAO:     collateralDAO,
 		btcClient:         btcClient,
 		conf:              conf,
 	}
@@ -91,17 +95,7 @@ func (cl *CollateralLoan) ScanCollateralAmount() {
 				ids = append(ids, collateralLoan.ID)
 			}
 
-			jsonWebhook := make(map[string]interface{})
-			jsonWebhook["type"] = ws.WebhookTypeCollateralLoan
-			jsonWebhook["data"] = map[string]interface{}{
-				"Action": ws.CollateralLoanActionWallet,
-				"IDs":    ids,
-			}
-
-			err = hookService.Event(jsonWebhook)
-			if err != nil {
-				log.Println("Hook loan wallet success error: ", err.Error())
-			}
+			cl.sendToHook(ids, ws.CollateralLoanActionWallet)
 		}
 	}
 }
@@ -111,6 +105,98 @@ func (cl *CollateralLoan) ScanCollateralRemind() {
 	cl.remindByDate(5)
 	cl.remindByDate(3)
 	cl.remindByDate(1)
+}
+
+// ScanCollateralPayingInterestOverdue :
+func (cl *CollateralLoan) ScanCollateralPayingInterestOverdue() {
+	var (
+		limit = 1
+		page  = 0
+	)
+	for {
+		page++
+		collateralLoans, err := cl.collateralLoanDAO.FindAllPayingInterestByDay(3, page, limit)
+		if err != nil {
+			log.Println("FindAllPayingOnDateOverdue error", err.Error())
+			return
+		}
+
+		if len(collateralLoans) == 0 {
+			return
+		}
+
+		var ids []uint
+		for _, collateralLoan := range collateralLoans {
+			ids = append(ids, collateralLoan.ID)
+		}
+
+		cl.sendToHook(ids, ws.CollateralLoanActionOverdue)
+	}
+}
+
+// ScanCollateralPayingInterest :
+func (cl *CollateralLoan) ScanCollateralPayingInterest() {
+	var (
+		limit = 1
+		page  = 0
+	)
+	for {
+		page++
+		collateralLoans, err := cl.collateralLoanDAO.FindAllPayingInterestByDay(1, page, limit)
+		if err != nil {
+			log.Println("FindAllPayingOnDate error", err.Error())
+			return
+		}
+
+		if len(collateralLoans) == 0 {
+			return
+		}
+
+		var ids []uint
+		for _, collateralLoan := range collateralLoans {
+			ids = append(ids, collateralLoan.ID)
+		}
+
+		cl.sendToHook(ids, ws.CollateralLoanActionExpired)
+	}
+}
+
+// ScanCollateralDowntrend :
+func (cl *CollateralLoan) ScanCollateralDowntrend() {
+	collaterals, err := cl.collateralDAO.FindAll()
+	if err != nil {
+		log.Println("ScanCollateralDowntrend error", err.Error())
+		return
+	}
+
+	for _, collateral := range collaterals {
+		currentValue := collateral.Value / 80 * 100 // 80%
+
+		var (
+			limit = 1
+			page  = 0
+		)
+		for {
+			page++
+			collateralLoans, err := cl.collateralLoanDAO.FindAllDowntrend(currentValue, page, limit)
+			if err != nil {
+				log.Println("FindAllDowntrend error", err.Error())
+				break
+			}
+
+			if len(collateralLoans) == 0 {
+				break
+			}
+
+			var ids []uint
+			for _, collateralLoan := range collateralLoans {
+				ids = append(ids, collateralLoan.ID)
+			}
+
+			// TODO sell coin
+		}
+
+	}
 }
 
 func (cl *CollateralLoan) remindByDate(dayNumber uint) {
@@ -135,53 +221,20 @@ func (cl *CollateralLoan) remindByDate(dayNumber uint) {
 			ids = append(ids, collateralLoan.ID)
 		}
 
-		jsonWebhook := make(map[string]interface{})
-		jsonWebhook["type"] = ws.WebhookTypeCollateralLoan
-		jsonWebhook["data"] = map[string]interface{}{
-			"Action": ws.CollateralLoanActionRemind,
-			"IDs":    ids,
-		}
-
-		err = hookService.Event(jsonWebhook)
-		if err != nil {
-			log.Println("Hook remind success error: ", err.Error())
-		}
+		cl.sendToHook(ids, ws.CollateralLoanActionRemind)
 	}
 }
 
-// ScanCollateralPayingInterest :
-func (cl *CollateralLoan) ScanCollateralPayingInterest() {
-	var (
-		limit = 1
-		page  = 0
-	)
-	for {
-		page++
-		collateralLoans, err := cl.collateralLoanDAO.FindAllPayingLastDay(page, limit)
-		if err != nil {
-			log.Println("FindAllPayingOnDate error", err.Error())
-			return
-		}
+func (cl *CollateralLoan) sendToHook(ids []uint, action ws.CollateralLoanAction) {
+	jsonWebhook := make(map[string]interface{})
+	jsonWebhook["type"] = ws.WebhookTypeCollateralLoan
+	jsonWebhook["data"] = map[string]interface{}{
+		"Action": action,
+		"IDs":    ids,
+	}
 
-		if len(collateralLoans) == 0 {
-			return
-		}
-
-		var ids []uint
-		for _, collateralLoan := range collateralLoans {
-			ids = append(ids, collateralLoan.ID)
-		}
-
-		jsonWebhook := make(map[string]interface{})
-		jsonWebhook["type"] = ws.WebhookTypeCollateralLoan
-		jsonWebhook["data"] = map[string]interface{}{
-			"Action": ws.CollateralLoanActionExpired,
-			"IDs":    ids,
-		}
-
-		err = hookService.Event(jsonWebhook)
-		if err != nil {
-			log.Println("Hook remind success error: ", err.Error())
-		}
+	err := hookService.Event(jsonWebhook)
+	if err != nil {
+		log.Println("Hook remind success error: ", err.Error())
 	}
 }
