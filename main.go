@@ -173,78 +173,78 @@ func main() {
 	})
 	taskCron.Start()
 
-	// collaterals loan group
-	collateralDAO := daos.InitCollateralDAO(models.Database())
-	collateralSrv := services.NewCollateralService(models.Database(), collateralDAO)
-	collateralCron := cron.New()
-	collateralCron.AddFunc("@every 5m", func() {
-		fmt.Println("scan collateral rate every 5m")
-		if !collateralSrv.RateFeeding {
-			collateralSrv.RateFeeding = true
-			collateralSrv.RateFeed()
-			collateralSrv.RateFeeding = false
-		} else {
-			fmt.Println("scan collateral rate is running")
-		}
-	})
-	collateralCron.Start()
+	// // collaterals loan group
+	// collateralDAO := daos.InitCollateralDAO(models.Database())
+	// collateralSrv := services.NewCollateralService(models.Database(), collateralDAO)
+	// collateralCron := cron.New()
+	// collateralCron.AddFunc("@every 5m", func() {
+	// 	fmt.Println("scan collateral rate every 5m")
+	// 	if !collateralSrv.RateFeeding {
+	// 		collateralSrv.RateFeeding = true
+	// 		collateralSrv.RateFeed()
+	// 		collateralSrv.RateFeeding = false
+	// 	} else {
+	// 		fmt.Println("scan collateral rate is running")
+	// 	}
+	// })
+	// collateralCron.Start()
 
-	btcClientService := services.NewBitcoinService(conf)
-	collateralLoanDAO := daos.InitCollateralLoanDAO(models.Database())
-	collateralLoanCron := cron.New()
-	collateralLoan := crons.NewCollateralLoan(collateralLoanDAO, collateralDAO, btcClientService, conf)
-	// Scan ETH wallet
-	collateralLoanCron.AddFunc("@every 10s", func() {
-		fmt.Println("collateral loan run every 10s")
-		if !collateralLoan.IsRunningAmount {
-			collateralLoan.IsRunningAmount = true
-			// collateralLoan.ScanCollateralAmount()
-			collateralLoan.IsRunningAmount = false
-		} else {
-			fmt.Println("collateral loan amount is running")
-		}
-	})
+	// btcClientService := services.NewBitcoinService(conf)
+	// collateralLoanDAO := daos.InitCollateralLoanDAO(models.Database())
+	// collateralLoanCron := cron.New()
+	// collateralLoan := crons.NewCollateralLoan(collateralLoanDAO, collateralDAO, btcClientService, conf)
+	// // Scan ETH wallet
+	// collateralLoanCron.AddFunc("@every 10s", func() {
+	// 	fmt.Println("collateral loan run every 10s")
+	// 	if !collateralLoan.IsRunningAmount {
+	// 		collateralLoan.IsRunningAmount = true
+	// 		collateralLoan.ScanCollateralAmount()
+	// 		collateralLoan.IsRunningAmount = false
+	// 	} else {
+	// 		fmt.Println("collateral loan amount is running")
+	// 	}
+	// })
 
-	// Scan collateral loan remind
-	collateralLoanCron.AddFunc("@every 24h", func() {
-		fmt.Println("collateral loan run every 24h")
-		if !collateralLoan.IsRunningRemind {
-			collateralLoan.IsRunningRemind = true
-			collateralLoan.ScanCollateralRemind()
-			collateralLoan.IsRunningRemind = false
-		} else {
-			fmt.Println("collateral loan remind is running")
-		}
+	// // Scan collateral loan remind
+	// collateralLoanCron.AddFunc("@every 24h", func() {
+	// 	fmt.Println("collateral loan run every 24h")
+	// 	if !collateralLoan.IsRunningRemind {
+	// 		collateralLoan.IsRunningRemind = true
+	// 		collateralLoan.ScanCollateralRemind()
+	// 		collateralLoan.IsRunningRemind = false
+	// 	} else {
+	// 		fmt.Println("collateral loan remind is running")
+	// 	}
 
-		if !collateralLoan.IsRunningDowntrend {
-			collateralLoan.IsRunningDowntrend = true
-			collateralLoan.ScanCollateralDowntrend()
-			collateralLoan.IsRunningDowntrend = false
-		} else {
-			fmt.Println("collateral loan remind is running")
-		}
-	})
+	// 	if !collateralLoan.IsRunningDowntrend {
+	// 		collateralLoan.IsRunningDowntrend = true
+	// 		collateralLoan.ScanCollateralDowntrend()
+	// 		collateralLoan.IsRunningDowntrend = false
+	// 	} else {
+	// 		fmt.Println("collateral loan remind is running")
+	// 	}
+	// })
 
-	// Scan collateral loan paying interest status
-	collateralLoanCron.AddFunc("@every 12h", func() {
-		fmt.Println("collateral loan run every 12h")
-		if !collateralLoan.IsRunningPayingInterest {
-			collateralLoan.IsRunningPayingInterest = true
-			collateralLoan.ScanCollateralPayingInterest()
-			collateralLoan.IsRunningPayingInterest = false
-		} else {
-			fmt.Println("collateral loan update status Paying Interest is running")
-		}
+	// // Scan collateral loan paying interest status
+	// collateralLoanCron.AddFunc("@every 12h", func() {
+	// 	fmt.Println("collateral loan run every 12h")
+	// 	if !collateralLoan.IsRunningPayingInterest {
+	// 		collateralLoan.IsRunningPayingInterest = true
+	// 		collateralLoan.ScanCollateralPayingInterest()
+	// 		collateralLoan.IsRunningPayingInterest = false
+	// 	} else {
+	// 		fmt.Println("collateral loan update status Paying Interest is running")
+	// 	}
 
-		if !collateralLoan.IsRunningPayingInterestOverdue {
-			collateralLoan.IsRunningPayingInterestOverdue = true
-			collateralLoan.ScanCollateralPayingInterestOverdue()
-			collateralLoan.IsRunningPayingInterestOverdue = false
-		} else {
-			fmt.Println("collateral loan update status Paying Interest Overdue is running")
-		}
-	})
-	collateralLoanCron.Start()
+	// 	if !collateralLoan.IsRunningPayingInterestOverdue {
+	// 		collateralLoan.IsRunningPayingInterestOverdue = true
+	// 		collateralLoan.ScanCollateralPayingInterestOverdue()
+	// 		collateralLoan.IsRunningPayingInterestOverdue = false
+	// 	} else {
+	// 		fmt.Println("collateral loan update status Paying Interest Overdue is running")
+	// 	}
+	// })
+	// collateralLoanCron.Start()
 
 	select {}
 }
