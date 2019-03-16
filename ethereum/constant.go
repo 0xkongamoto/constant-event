@@ -2,7 +2,6 @@ package ethereum
 
 import (
 	"fmt"
-	"log"
 	"math/big"
 
 	contract "github.com/constant-money/constant-event/ethereum/contract"
@@ -27,6 +26,8 @@ func InitConstant(contractAddr string, ownerPriKey string, cipherKey string, eth
 			priKey = ownerPriKey
 		}
 
+		fmt.Println("DEBUG --> ", priKey)
+
 		return &Constant{
 			ContractAddress:         contractAddr,
 			ContractOwnerPrivateKey: priKey,
@@ -34,6 +35,7 @@ func InitConstant(contractAddr string, ownerPriKey string, cipherKey string, eth
 		}
 	}
 
+	fmt.Println("DEBUG 1 --> ", ownerPriKey)
 	return &Constant{
 		ContractAddress:         contractAddr,
 		ContractOwnerPrivateKey: ownerPriKey,
@@ -70,12 +72,10 @@ func (c *Constant) isValid() bool {
 func (c *Constant) Purchase(address string, value *big.Int, offchain string) (string, error) {
 	instance, err := c.GetInstance()
 	if err != nil {
-		log.Fatal(err)
 		return "", err
 	}
 	auth, err := c.ethereumService.GetTransactionOpt(c.ContractOwnerPrivateKey)
 	if err != nil {
-		log.Fatal(err)
 		return "", err
 	}
 
@@ -84,7 +84,6 @@ func (c *Constant) Purchase(address string, value *big.Int, offchain string) (st
 
 	tx, err := instance.Purchase(auth, common.HexToAddress(address), value, o)
 	if err != nil {
-		log.Fatal(err)
 		return "", err
 	}
 	return tx.Hash().Hex(), nil
@@ -93,12 +92,10 @@ func (c *Constant) Purchase(address string, value *big.Int, offchain string) (st
 func (c *Constant) Redeem(address string, value *big.Int, offchain string) (string, error) {
 	instance, err := c.GetInstance()
 	if err != nil {
-		log.Fatal(err)
 		return "", err
 	}
 	auth, err := c.ethereumService.GetTransactionOpt(c.ContractOwnerPrivateKey)
 	if err != nil {
-		log.Fatal(err)
 		return "", err
 	}
 
@@ -107,35 +104,27 @@ func (c *Constant) Redeem(address string, value *big.Int, offchain string) (stri
 
 	tx, err := instance.Redeem(auth, common.HexToAddress(address), value, o)
 	if err != nil {
-		log.Fatal(err)
 		return "", err
 	}
 	return tx.Hash().Hex(), nil
 }
 
 func (c *Constant) TransferByAdmin(fromAddr string, toAddr string, value *big.Int, offchain string) (string, error) {
-	fmt.Println(" DEBUG ", fromAddr, toAddr, value, offchain)
 	instance, err := c.GetInstance()
 	if err != nil {
-		log.Fatal(err)
 		return "", err
 	}
 	auth, err := c.ethereumService.GetTransactionOpt(c.ContractOwnerPrivateKey)
 	if err != nil {
-		log.Fatal(err)
 		return "", err
 	}
 
 	o := [32]byte{}
 	copy(o[:], []byte(offchain))
 
-	fmt.Println("DEBUG 88")
 	tx, err := instance.TransferByAdmin(auth, common.HexToAddress(fromAddr), common.HexToAddress(toAddr), value, o)
-	fmt.Println("DEBUG 99")
 
 	if err != nil {
-		fmt.Println("DEBUG 100 ", err)
-		log.Fatal(err)
 		return "", err
 	}
 	return tx.Hash().Hex(), nil
@@ -145,14 +134,12 @@ func (c *Constant) TransferByAdmin(fromAddr string, toAddr string, value *big.In
 func (c *Constant) BalanceOf(address string) (*big.Int, error) {
 	instance, err := c.GetInstance()
 	if err != nil {
-		log.Fatal(err)
 		return nil, err
 	}
 
 	bal, err := instance.BalanceOf(&bind.CallOpts{}, common.HexToAddress(address))
 
 	if err != nil {
-		log.Fatal(err)
 		return nil, err
 	}
 	return bal, nil

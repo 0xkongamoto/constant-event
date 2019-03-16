@@ -67,21 +67,18 @@ func (cr *CronTask) ScanTask() {
 		address := arrAddr[i]
 		task := tasks[i]
 
-		fmt.Println("DEBUG A")
 		dataBytes := []byte(task.Data)
 		var dataJSON map[string]interface{}
 		if errUnmarshal := json.Unmarshal(dataBytes, &dataJSON); errUnmarshal != nil {
 			log.Println("Unmarshal task data", errUnmarshal.Error())
 			return
 		}
-		fmt.Println("DEBUG B")
 
 		errOnchain := cr.handleSmartContractMethod(dataJSON, &task, address, cr.etherSrv, task.Method)
 
 		if errOnchain == nil {
 			cr.updateMasterAddrStatus(address, wm.MasterAddressStatusProgressing)
 		}
-		fmt.Println("DEBUG C")
 
 		cr.lastIdx = task.ID
 
@@ -91,7 +88,6 @@ func (cr *CronTask) ScanTask() {
 
 func (cr *CronTask) handleSmartContractMethod(dataJSON map[string]interface{}, task *wm.Task, masterAddrReady *wm.MasterAddress, etherService *ethereum.Ethereum, method wm.TaskMethod) error {
 
-	fmt.Println("DEBUG 11")
 	dataJSON["ContractAddress"] = task.ContractAddress
 	dataJSON["ContractName"] = task.ContractName
 	dataJSON["MasterAddr"] = masterAddrReady.Address
@@ -102,7 +98,6 @@ func (cr *CronTask) handleSmartContractMethod(dataJSON map[string]interface{}, t
 	var tnxHash string
 	var errOnchain error
 
-	fmt.Println("DEBUG 22")
 	switch task.Method {
 
 	case wm.TaskMethodPurchase:
@@ -116,10 +111,8 @@ func (cr *CronTask) handleSmartContractMethod(dataJSON map[string]interface{}, t
 		tnxHash, errOnchain = cr.handleRedeem(&data, task.ID, constantService)
 
 	case wm.TaskMethodTransferByAdmin:
-		fmt.Println("DEBUG 33")
 		var data models.TransferByAdminParams
 		mapstructure.Decode(dataJSON, &data)
-		fmt.Println("DEBUG 44")
 		tnxHash, errOnchain = cr.handleTransferByAdmin(&data, task.ID, constantService)
 	}
 
@@ -160,16 +153,13 @@ func (cr *CronTask) handleRedeem(params *models.RedeemParams, taskID uint, const
 }
 
 func (cr *CronTask) handleTransferByAdmin(params *models.TransferByAdminParams, taskID uint, constantService *ethereum.Constant) (string, error) {
-	fmt.Println("DEBUG 55")
 	value := new(big.Int)
 	value, ok := value.SetString(params.Value, 10)
 	if !ok {
 		log.Println("TransferByAdmin SetString: error")
 		return "", errors.New("TransferByAdmin SetString: error")
 	}
-	fmt.Println("DEBUG 66")
 	tnxHash, err := constantService.TransferByAdmin(params.FromAddress, params.ToAddress, value, params.Offchain)
-	fmt.Println("DEBUG 77")
 	return tnxHash, err
 }
 
