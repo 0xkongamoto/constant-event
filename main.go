@@ -198,7 +198,7 @@ func main() {
 		fmt.Println("collateral loan run every 10s")
 		if !collateralLoan.IsRunningAmount {
 			collateralLoan.IsRunningAmount = true
-			collateralLoan.ScanCollateralAmount()
+			// collateralLoan.ScanCollateralAmount()
 			collateralLoan.IsRunningAmount = false
 		} else {
 			fmt.Println("collateral loan amount is running")
