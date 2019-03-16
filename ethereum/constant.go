@@ -1,6 +1,7 @@
 package ethereum
 
 import (
+	"fmt"
 	"log"
 	"math/big"
 
@@ -113,6 +114,7 @@ func (c *Constant) Redeem(address string, value *big.Int, offchain string) (stri
 }
 
 func (c *Constant) TransferByAdmin(fromAddr string, toAddr string, value *big.Int, offchain string) (string, error) {
+	fmt.Println(" DEBUG ", fromAddr, toAddr, value, offchain)
 	instance, err := c.GetInstance()
 	if err != nil {
 		log.Fatal(err)
@@ -127,7 +129,9 @@ func (c *Constant) TransferByAdmin(fromAddr string, toAddr string, value *big.In
 	o := [32]byte{}
 	copy(o[:], []byte(offchain))
 
+	fmt.Println("DEBUG 88")
 	tx, err := instance.TransferByAdmin(auth, common.HexToAddress(fromAddr), common.HexToAddress(toAddr), value, o)
+	fmt.Println("DEBUG 99")
 
 	if err != nil {
 		log.Fatal(err)
