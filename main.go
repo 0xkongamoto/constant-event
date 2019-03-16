@@ -165,7 +165,7 @@ func main() {
 		fmt.Println("scan task every 5s")
 		if !crTask.ScanRunning {
 			crTask.ScanRunning = true
-			crTask.ScanTask()
+			// crTask.ScanTask()
 			crTask.ScanRunning = false
 		} else {
 			fmt.Println("scan task is running")
