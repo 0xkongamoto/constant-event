@@ -116,8 +116,10 @@ func (cr *CronTask) handleSmartContractMethod(dataJSON map[string]interface{}, t
 		tnxHash, errOnchain = cr.handleRedeem(&data, task.ID, constantService)
 
 	case wm.TaskMethodTransferByAdmin:
+		fmt.Println("DEBUG 33")
 		var data models.TransferByAdminParams
 		mapstructure.Decode(dataJSON, &data)
+		fmt.Println("DEBUG 44")
 		tnxHash, errOnchain = cr.handleTransferByAdmin(&data, task.ID, constantService)
 	}
 
@@ -158,13 +160,16 @@ func (cr *CronTask) handleRedeem(params *models.RedeemParams, taskID uint, const
 }
 
 func (cr *CronTask) handleTransferByAdmin(params *models.TransferByAdminParams, taskID uint, constantService *ethereum.Constant) (string, error) {
+	fmt.Println("DEBUG 55")
 	value := new(big.Int)
 	value, ok := value.SetString(params.Value, 10)
 	if !ok {
 		log.Println("TransferByAdmin SetString: error")
 		return "", errors.New("TransferByAdmin SetString: error")
 	}
+	fmt.Println("DEBUG 66")
 	tnxHash, err := constantService.TransferByAdmin(params.FromAddress, params.ToAddress, value, params.Offchain)
+	fmt.Println("DEBUG 77")
 	return tnxHash, err
 }
 
