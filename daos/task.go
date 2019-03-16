@@ -1,8 +1,6 @@
 package daos
 
 import (
-	"fmt"
-
 	"github.com/constant-money/constant-event/models"
 	wm "github.com/constant-money/constant-web-api/models"
 	"github.com/jinzhu/gorm"
@@ -13,7 +11,6 @@ type TaskDAO struct {
 }
 
 func (t *TaskDAO) GetTasksScanning(fromID uint, limit int) ([]wm.Task, error) {
-	fmt.Println("DEBUG 1")
 	tasks := []wm.Task{}
 	err := models.Database().
 		Where(`
@@ -22,8 +19,6 @@ func (t *TaskDAO) GetTasksScanning(fromID uint, limit int) ([]wm.Task, error) {
 			`, fromID, wm.TaskStatusPending).
 		Limit(limit).
 		Find(&tasks).Error
-
-	fmt.Println("DEBUG 2")
 	if err != nil {
 		return nil, err
 	}
