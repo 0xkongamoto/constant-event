@@ -134,6 +134,7 @@ func (c *Constant) TransferByAdmin(fromAddr string, toAddr string, value *big.In
 	fmt.Println("DEBUG 99")
 
 	if err != nil {
+		fmt.Println("DEBUG 100 ", err)
 		log.Fatal(err)
 		return "", err
 	}
