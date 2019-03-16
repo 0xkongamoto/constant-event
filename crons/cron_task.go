@@ -41,17 +41,15 @@ func NewCronTask(masterAddressDAO *daos.MasterAddressDAO, taskDao *daos.TaskDAO,
 
 // ScanTask : ...
 func (cr *CronTask) ScanTask() {
-	fmt.Println("DEBUG 1")
 	arrAddr, errMasterAddr := cr.masterAddressDAO.GetAdddressReady()
-	fmt.Println("DEBUG 2")
 	if errMasterAddr != nil {
-		fmt.Println("Get master address ready error: ", errMasterAddr.Error())
+		log.Println("Get master address ready error: ", errMasterAddr.Error())
 		return
 	}
 
 	tasks, errTasks := cr.taskDAO.GetTasksScanning(cr.lastIdx, len(arrAddr))
 	if errTasks != nil {
-		fmt.Println("Get Tasks error", errTasks.Error())
+		log.Println("Get Tasks error", errTasks.Error())
 		return
 	}
 
@@ -61,7 +59,7 @@ func (cr *CronTask) ScanTask() {
 	}
 
 	if len(tasks) > len(arrAddr) {
-		fmt.Println("len(tasks) > len(arrAddr)")
+		log.Println("len(tasks) > len(arrAddr)")
 		return
 	}
 
