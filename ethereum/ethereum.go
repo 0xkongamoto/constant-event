@@ -5,7 +5,6 @@ import (
 	"crypto/ecdsa"
 	"encoding/hex"
 	"errors"
-	"log"
 	"math/big"
 
 	"github.com/constant-money/constant-event/config"
@@ -77,25 +76,23 @@ func (s *Ethereum) GetTransactionOpt(fromPrvKey string) (*bind.TransactOpts, err
 
 	privateKey, err := crypto.HexToECDSA(fromPrvKey)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
 	publicKey := privateKey.Public()
 	publicKeyECDSA, ok := publicKey.(*ecdsa.PublicKey)
 	if !ok {
-		log.Fatal("error casting public key to ECDSA")
+		return nil, errors.New("error casting public key to ECDSA")
 	}
 
 	fromAddress := crypto.PubkeyToAddress(*publicKeyECDSA)
 	nonce, err := client.PendingNonceAt(context.Background(), fromAddress)
 	if err != nil {
-		log.Fatal(err)
 		return nil, err
 	}
 
 	gasPrice, err := s.GetGasPrice()
 	if err != nil {
-		log.Fatal(err)
 		return nil, err
 	}
 

@@ -87,6 +87,7 @@ func (cr *CronTask) ScanTask() {
 }
 
 func (cr *CronTask) handleSmartContractMethod(dataJSON map[string]interface{}, task *wm.Task, masterAddrReady *wm.MasterAddress, etherService *ethereum.Ethereum, method wm.TaskMethod) error {
+
 	dataJSON["ContractAddress"] = task.ContractAddress
 	dataJSON["ContractName"] = task.ContractName
 	dataJSON["MasterAddr"] = masterAddrReady.Address

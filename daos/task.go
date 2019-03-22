@@ -19,7 +19,6 @@ func (t *TaskDAO) GetTasksScanning(fromID uint, limit int) ([]wm.Task, error) {
 			`, fromID, wm.TaskStatusPending).
 		Limit(limit).
 		Find(&tasks).Error
-
 	if err != nil {
 		return nil, err
 	}
