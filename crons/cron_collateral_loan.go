@@ -16,7 +16,8 @@ import (
 )
 
 const (
-	CollateralLoanDowntrendLimit = 80 * 100 // 80%
+	CollateralLoanDowntrendRemindLimit uint64 = 80 * 100 // 80%
+	CollateralLoanDowntrendLimit       uint64 = 70 * 100 // 70%
 )
 
 // CollateralLoan :
@@ -167,6 +168,8 @@ func (cl *CollateralLoan) ScanCollateralPayingInterest() {
 
 // ScanCollateralDowntrend :
 func (cl *CollateralLoan) ScanCollateralDowntrend() {
+	// cl.remindByDate(1)
+
 	collaterals, err := cl.collateralDAO.FindAll()
 	if err != nil {
 		log.Println("ScanCollateralDowntrend error", err.Error())
@@ -174,33 +177,8 @@ func (cl *CollateralLoan) ScanCollateralDowntrend() {
 	}
 
 	for _, collateral := range collaterals {
-		currentValue := collateral.Value / CollateralLoanDowntrendLimit
-
-		var (
-			limit = 1
-			page  = 0
-		)
-		for {
-			page++
-			collateralLoans, err := cl.collateralLoanDAO.FindAllDowntrend(currentValue, page, limit)
-			if err != nil {
-				log.Println("FindAllDowntrend error", err.Error())
-				break
-			}
-
-			if len(collateralLoans) == 0 {
-				break
-			}
-
-			var ids []uint
-			for _, collateralLoan := range collateralLoans {
-				ids = append(ids, collateralLoan.ID)
-			}
-
-			cl.sendToHook(ids, ws.CollateralLoanActionDownTrend)
-			// TODO sell coin
-		}
-
+		cl.remindDownTrend(collateral.Value / CollateralLoanDowntrendRemindLimit)
+		cl.paymentDownTrend(collateral.Value / CollateralLoanDowntrendLimit)
 	}
 }
 
@@ -227,6 +205,59 @@ func (cl *CollateralLoan) remindByDate(dayNumber uint) {
 		}
 
 		cl.sendToHook(ids, ws.CollateralLoanActionRemind)
+	}
+}
+
+func (cl *CollateralLoan) remindDownTrend(currentValue uint64) {
+	var (
+		limit = 1
+		page  = 0
+	)
+	for {
+		page++
+		collateralLoans, err := cl.collateralLoanDAO.FindAllDowntrend(currentValue, page, limit)
+		if err != nil {
+			log.Println("FindAllDowntrend error", err.Error())
+			break
+		}
+
+		if len(collateralLoans) == 0 {
+			break
+		}
+
+		var ids []uint
+		for _, collateralLoan := range collateralLoans {
+			ids = append(ids, collateralLoan.ID)
+		}
+
+		cl.sendToHook(ids, ws.CollateralLoanActionDownTrendRemind)
+	}
+}
+
+func (cl *CollateralLoan) paymentDownTrend(currentValue uint64) {
+	var (
+		limit = 1
+		page  = 0
+	)
+	for {
+		page++
+		collateralLoans, err := cl.collateralLoanDAO.FindAllDowntrend(currentValue, page, limit)
+		if err != nil {
+			log.Println("FindAllDowntrend error", err.Error())
+			break
+		}
+
+		if len(collateralLoans) == 0 {
+			break
+		}
+
+		var ids []uint
+		for _, collateralLoan := range collateralLoans {
+			ids = append(ids, collateralLoan.ID)
+		}
+
+		cl.sendToHook(ids, ws.CollateralLoanActionDownTrend)
+		// TODO sell coin
 	}
 }
 
