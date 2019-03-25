@@ -1,7 +1,6 @@
 package ethereum
 
 import (
-	"fmt"
 	"math/big"
 
 	contract "github.com/constant-money/constant-event/ethereum/contract"
@@ -26,8 +25,6 @@ func InitConstant(contractAddr string, ownerPriKey string, cipherKey string, eth
 			priKey = ownerPriKey
 		}
 
-		fmt.Println("DEBUG --> ", priKey)
-
 		return &Constant{
 			ContractAddress:         contractAddr,
 			ContractOwnerPrivateKey: priKey,
@@ -35,7 +32,6 @@ func InitConstant(contractAddr string, ownerPriKey string, cipherKey string, eth
 		}
 	}
 
-	fmt.Println("DEBUG 1 --> ", ownerPriKey)
 	return &Constant{
 		ContractAddress:         contractAddr,
 		ContractOwnerPrivateKey: ownerPriKey,
