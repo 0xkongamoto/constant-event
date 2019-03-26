@@ -62,22 +62,6 @@ func main() {
 		time.Sleep(time.Second * 1)
 	}
 
-	// add order cron
-	orderDAO := daos.InitOrderDAO(models.Database())
-	orderSrv := services.InitOrderService(orderDAO, conf)
-	orderCron := cron.New()
-	orderCron.AddFunc("@every 1m", func() {
-		fmt.Println("scan order every 1m")
-		if !orderSrv.Running {
-			orderSrv.Running = true
-			orderSrv.ScanOrders()
-			orderSrv.Running = false
-		} else {
-			fmt.Println("scan order is running")
-		}
-	})
-	orderCron.Start()
-
 	// add exchange rate cron
 	exchangeDAO := daos.InitExchangeDAO(models.Database())
 	exchangeSrv := services.InitExchangeService(exchangeDAO)
