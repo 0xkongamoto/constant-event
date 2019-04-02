@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/constant-money/constant-web-api/serializers"
 	"github.com/constant-money/constant-web-api/services/3rd/primetrust"
 )
 
@@ -97,7 +98,7 @@ func (us *UserService) SendKYCHook(userID uint, primetrustStatus bool, primetrus
 	jsonKYCData["ID"] = userID
 
 	jsonData := make(map[string]interface{})
-	jsonData["type"] = 4 /* WebhookTypeKYC */
+	jsonData["type"] = serializers.WebhookTypeKYC /* WebhookTypeKYC */
 	jsonData["data"] = jsonKYCData
 
 	endpoint := us.hookEndpoint

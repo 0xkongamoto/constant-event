@@ -194,7 +194,7 @@ func (cr *Cron) scanWorker(id int, etherClient *ethclient.Client, jobs <-chan wm
 								jsonData["Hash"] = transaction.Hash
 
 								jsonWebhook := make(map[string]interface{})
-								jsonWebhook["type"] = 0 /* WebhookTypeTxHash */
+								jsonWebhook["type"] = serializers.WebhookTypeTxHash
 								jsonWebhook["data"] = jsonData
 
 								if decodeStatus {
