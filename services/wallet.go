@@ -59,17 +59,13 @@ func (ws *WalletService) SendUserWalletHook(userWallet *wm.UserWallet, constantA
 	var data map[string]interface{}
 	json.Unmarshal(b, &data)
 
-	status, ok := data["status"]
-	message, hasMessage := data["message"]
+	e := data["Error"]
 
-	if ok && status.(float64) > 0 {
+	if e == nil {
 		return nil
 	}
-	errStr := "Unknown"
-	if hasMessage {
-		errStr = message.(string)
-	}
-	return errors.New(errStr)
+
+	return errors.New(e.(string))
 }
 
 // ScanBalanceOf : ...
