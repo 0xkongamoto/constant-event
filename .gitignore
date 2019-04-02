@@ -15,3 +15,4 @@
 config/conf.json
 logs/*
 vendor
+glide.*
