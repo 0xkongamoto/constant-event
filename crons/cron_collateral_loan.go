@@ -100,7 +100,9 @@ func (cl *CollateralLoan) ScanCollateralAmount() {
 				ids = append(ids, collateralLoan.ID)
 			}
 
-			cl.sendToHook(ids, ws.CollateralLoanActionWallet)
+			if ids != nil && len(ids) > 0 {
+				cl.sendToHook(ids, ws.CollateralLoanActionWallet)
+			}
 		}
 	}
 }
@@ -135,7 +137,9 @@ func (cl *CollateralLoan) ScanCollateralPayingInterestOverdue() {
 			ids = append(ids, collateralLoan.ID)
 		}
 
-		cl.sendToHook(ids, ws.CollateralLoanActionOverdue)
+		if ids != nil && len(ids) > 0 {
+			cl.sendToHook(ids, ws.CollateralLoanActionOverdue)
+		}
 	}
 }
 
@@ -162,7 +166,9 @@ func (cl *CollateralLoan) ScanCollateralPayingInterest() {
 			ids = append(ids, collateralLoan.ID)
 		}
 
-		cl.sendToHook(ids, ws.CollateralLoanActionExpired)
+		if ids != nil && len(ids) > 0 {
+			cl.sendToHook(ids, ws.CollateralLoanActionExpired)
+		}
 	}
 }
 
@@ -204,7 +210,9 @@ func (cl *CollateralLoan) remindByDate(dayNumber uint) {
 			ids = append(ids, collateralLoan.ID)
 		}
 
-		cl.sendToHook(ids, ws.CollateralLoanActionRemind)
+		if ids != nil && len(ids) > 0 {
+			cl.sendToHook(ids, ws.CollateralLoanActionRemind)
+		}
 	}
 }
 
@@ -230,7 +238,9 @@ func (cl *CollateralLoan) remindDownTrend(currentValue uint64) {
 			ids = append(ids, collateralLoan.ID)
 		}
 
-		cl.sendToHook(ids, ws.CollateralLoanActionDownTrendRemind)
+		if ids != nil && len(ids) > 0 {
+			cl.sendToHook(ids, ws.CollateralLoanActionDownTrendRemind)
+		}
 	}
 }
 
@@ -256,7 +266,9 @@ func (cl *CollateralLoan) paymentDownTrend(currentValue uint64) {
 			ids = append(ids, collateralLoan.ID)
 		}
 
-		cl.sendToHook(ids, ws.CollateralLoanActionDownTrend)
+		if ids != nil && len(ids) > 0 {
+			cl.sendToHook(ids, ws.CollateralLoanActionDownTrend)
+		}
 		// TODO sell coin
 	}
 }
@@ -271,6 +283,6 @@ func (cl *CollateralLoan) sendToHook(ids []uint, action ws.CollateralLoanAction)
 
 	err := hookService.Event(jsonWebhook)
 	if err != nil {
-		log.Println("Hook remind success error: ", err.Error())
+		log.Println("Hook remind success error: ", jsonWebhook, err.Error())
 	}
 }
