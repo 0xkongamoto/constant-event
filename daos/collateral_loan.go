@@ -31,7 +31,7 @@ func (cl *CollateralLoanDAO) FindAllPending(lastIndex uint, limit int) ([]*wm.Co
 
 	query := cl.db.Table("collateral_loans").Preload("Collateral").
 		Where("status = ? AND id > ?", wm.CollateralLoanStatusPending, lastIndex).
-		Order("id desc").
+		Order("id asc").
 		Limit(limit)
 
 	if err := query.Find(&collateralLoans).Error; err != nil {

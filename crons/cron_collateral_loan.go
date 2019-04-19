@@ -68,7 +68,7 @@ func (cl *CollateralLoan) ScanCollateralAmount() {
 		cl.LastIndex = 0
 	} else {
 		var ids []uint
-
+		cl.LastIndex = collateralLoans[0].ID
 		for _, collateralLoan := range collateralLoans {
 			cl.LastIndex = collateralLoan.ID
 			var (
