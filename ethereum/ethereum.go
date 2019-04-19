@@ -160,3 +160,14 @@ func (s *Ethereum) SendSignedTransaction(fromPrvKey string, to string, value *bi
 	}
 	return rtx.Hash().Hex(), nil
 }
+
+// BalanceAtAddr : address
+func (s *Ethereum) BalanceAtAddr(addr string) (*big.Int, error) {
+	client, err := s.GetClient()
+
+	if err != nil {
+		return nil, err
+	}
+	account := common.HexToAddress(addr)
+	return client.BalanceAt(context.Background(), account, nil)
+}

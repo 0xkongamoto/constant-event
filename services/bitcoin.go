@@ -77,7 +77,7 @@ func NewBitcoinService(conf *config.Config) *BitcoinService {
 
 // BTCBalanceOf :
 func (bs *BitcoinService) BTCBalanceOf(address string) (string, error) {
-	url := fmt.Sprintf("%s/addr/%s/balance", bs.conf.BlockexplorerAPI, address)
+	url := fmt.Sprintf("%s/%s?limit=1&unspentOnly=true&includeScript=false", bs.conf.BlockCypherAPI, address)
 	req, err := http.NewRequest("GET", url, nil)
 
 	if err != nil {
@@ -109,18 +109,18 @@ func (bs *BitcoinService) BTCBalanceOf(address string) (string, error) {
 		fmt.Println("Read body failed", err.Error())
 		return "", errors.New("Read body failed")
 	}
+
 	return string(body), nil
 }
 
-// BTCGetUTXO :
-func (bs *BitcoinService) BTCGetLastUTXO(address string) (string, error) {
-	// url := fmt.Sprintf("%s/%s/full?limit=1&unspentOnly=true&includeScript=false", bs.conf.BlockCypherAPI, address)
+// BTCGetAddrInfo :
+func (bs *BitcoinService) BTCGetAddrInfo(address string) (AddrInfo, error) {
 	url := fmt.Sprintf("%s/%s?limit=1&unspentOnly=true&includeScript=false", bs.conf.BlockCypherAPI, address)
 	req, err := http.NewRequest("GET", url, nil)
 
 	if err != nil {
 		fmt.Println("BTC get UTXO failed", address, err.Error())
-		return "", err
+		return AddrInfo{}, err
 	}
 
 	client := &http.Client{}
@@ -128,7 +128,7 @@ func (bs *BitcoinService) BTCGetLastUTXO(address string) (string, error) {
 
 	if err != nil {
 		fmt.Println("Call BTC get UTXO failed", err.Error())
-		return "", err
+		return AddrInfo{}, err
 	}
 
 	defer func(r *http.Response) {
@@ -139,7 +139,7 @@ func (bs *BitcoinService) BTCGetLastUTXO(address string) (string, error) {
 	}(res)
 
 	if res.StatusCode != http.StatusOK {
-		return "", errors.New("GetUTXO Response status != 200")
+		return AddrInfo{}, errors.New("GetUTXO Response status != 200")
 	}
 
 	body, err := ioutil.ReadAll(res.Body)
@@ -148,28 +148,31 @@ func (bs *BitcoinService) BTCGetLastUTXO(address string) (string, error) {
 	json.Unmarshal(body, &data)
 	if err != nil {
 		fmt.Println("Read body failed", err.Error())
-		return "", errors.New("Read body failed")
+		return AddrInfo{}, errors.New("Read body failed")
 	}
-	if len(data.TxRefs) == 0 {
-		return "", errors.New("GetUTXO TxRefs empty")
-	}
-	return data.TxRefs[0].TxHash, nil
+
+	return data, nil
 }
 
 // BTCSendRawTnx :
 func (bs *BitcoinService) BTCSendRawTnx(from string, secret string, cipherKey string, destination string, amount int64) (string, error) {
 	priKey, err := helpers.DecryptToString(secret, cipherKey)
 
-	// Get balance of fromAddress
-	balance, err := bs.BTCBalanceOf(from)
-	if balance == "0" {
-		return "", errors.New("Balance = 0")
-	}
-
 	// Get last txID
-	utxoTxHash, err := bs.BTCGetLastUTXO(from)
+	addrInfo, err := bs.BTCGetAddrInfo(from)
 	if err != nil {
 		return "", err
+	}
+
+	if len(addrInfo.TxRefs) == 0 {
+		return "", errors.New("GetUTXO TxRefs empty")
+	}
+	utxoTxHash := addrInfo.TxRefs[0].TxHash
+
+	// Get balance of fromAddress
+	balance := addrInfo.Balance
+	if balance == 0 || balance < uint64(amount) {
+		return "", errors.New("Error Balance is not enough")
 	}
 
 	// Generate transaction
@@ -203,7 +206,7 @@ func (bs *BitcoinService) BTCSendRawTnx(from string, secret string, cipherKey st
 			fmt.Println("Close body failed", err.Error())
 		}
 	}(res)
-
+	fmt.Println(res.StatusCode)
 	if res.StatusCode != http.StatusOK {
 		fmt.Println("Send RawTx Response status != 200")
 		return "", errors.New("Send RawTx Response status != 200")

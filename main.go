@@ -176,7 +176,7 @@ func main() {
 	btcClientService := services.NewBitcoinService(conf)
 	collateralLoanDAO := daos.InitCollateralLoanDAO(models.Database())
 	collateralLoanCron := cron.New()
-	collateralLoan := crons.NewCollateralLoan(collateralLoanDAO, collateralDAO, btcClientService, conf)
+	collateralLoan := crons.NewCollateralLoan(collateralLoanDAO, collateralDAO, btcClientService, etherService, conf)
 	// Scan ETH wallet
 	collateralLoanCron.AddFunc("@every 10s", func() {
 		fmt.Println("collateral loan run every 10s")
@@ -227,6 +227,14 @@ func main() {
 		} else {
 			fmt.Println("collateral loan update status Paying Interest Overdue is running")
 		}
+
+		// if !collateralLoan.IsRunningCollect {
+		// 	collateralLoan.IsRunningCollect = true
+		// 	collateralLoan.ScanCollateralCollect()
+		// 	collateralLoan.IsRunningCollect = false
+		// } else {
+		// 	fmt.Println("collateral loan update status Paying Interest Overdue is running")
+		// }
 	})
 	collateralLoanCron.Start()
 

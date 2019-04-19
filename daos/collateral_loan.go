@@ -106,3 +106,19 @@ func (cl *CollateralLoanDAO) FindAllDowntrend(amount uint64, page int, limit int
 	}
 	return collateralLoans, nil
 }
+
+func (cl *CollateralLoanDAO) FindAllCollect(page int, limit int) ([]*wm.CollateralLoan, error) {
+	var (
+		models []*wm.CollateralLoan
+		offset = page*limit - limit
+	)
+
+	query := cl.db.Table("collateral_loans").Preload("Collateral").Preload("CollateralLoanInterestRate").Order("id asc").
+		Limit(limit).Offset(offset).
+		Where(`collect_status = ? AND status != ?`, wm.CollateralLoanCollectStatusPending, wm.CollateralLoanStatusPending)
+
+	if err := query.Find(&models).Error; err != nil {
+		return nil, errors.Wrap(err, "db.Find")
+	}
+	return models, nil
+}

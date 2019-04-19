@@ -47,6 +47,9 @@ type Config struct {
 	BlockCypherAPI      string     `json:"blockcyp_api_url"`
 	BtcIsTestnet        bool       `json:"btc_is_testnet"`
 	BcyToken            string     `json:"bcy_token"`
+	MasterEthWallet     string     `json:"master_eth_wallet"`
+	MasterBtcWallet     string     `json:"master_btc_wallet"`
+	MasterUsdtWallet    string     `json:"master_usdt_wallet"`
 }
 
 type Contract struct {
